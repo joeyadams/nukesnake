@@ -155,19 +155,42 @@ short read_keys(void)
 
 static void game_idle(void)
 {
-	unsigned long catchup;
+	unsigned long steps;
 	unsigned long fc_max = 2520 / ns.settings.game_speed;
-	do
+
+	// Wait until it's time to draw the next frame.
+	// Poll game keys while we wait.
+	for (;;)
 	{
 		read_keys();
-	} while (frame_counter<fc_max);
-	catchup = frame_counter/fc_max;
+		if (frame_counter != 0)
+			break;
+
+		// Wait 1 millisecond before polling again.
+		// For 60 frames per second, we'll need to wait
+		// around 16 times per frame.
+		rest(1);
+	}
+
+	// Number of times to update the game state.
+	// frame_counter is usually 1 here, but if the game is running slow,
+	// we may have catching up to do.
+	steps = frame_counter * ns.settings.game_speed;
+
+	// Reset counter for next frame.
 	frame_counter = 0;
-	if (catchup > MAX_FRAMEDROP)
-		catchup = MAX_FRAMEDROP;
-	NS_schedule_redraw();
-	while (catchup--)
+
+	// Don't advance the game too far, just enough to prevent jitter without warping
+	// the game if the user alt-tabs to something else.
+	if (steps > MAX_FRAMEDROP)
+		steps = MAX_FRAMEDROP;
+
+	// Advance the game state.
+	while (steps--)
 		NS_frame();
+
+	// Draw the game state after these updates.
+	NS_redraw();
 }
 
 long draw_count=0;
@@ -253,8 +276,11 @@ int main(void)
 	
 	LOCK_VARIABLE(frame_counter);
 	LOCK_FUNCTION(increment_frame_counter);
-	//The LCM of 1...10 (all the game speeds) is 2520
-	install_int_ex(increment_frame_counter, (TIMERS_PER_SECOND/5/120*10) / 2520);
+
+	// The frame counter increments every time we want to redraw.
+	// We update the game state game_speed times per frame.
+	install_int_ex(increment_frame_counter, TIMERS_PER_SECOND / 60);
+
 	// do I need to lock close_button_pressed?  I don't know.
 	LOCK_FUNCTION(close_button_handler);
 	set_close_button_callback(close_button_handler);
