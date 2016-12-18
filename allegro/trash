@@ -1,0 +1,69 @@
+//Speed will not be handled with a d_keyboard_proc
+int ma_speed(void)
+{
+	//Ugly hack to find out which key is pressed
+	//We're also assuming that KEY_i equals KEY_0+i (hopefully Allegro won't scramble the keycodes in the future)
+	int i;
+	short speed = 0;
+	for (i=0;i<10;i++)
+	{
+		if (key[KEY_0+i])
+		{
+			speed = i+1;
+			break;
+		}
+	}
+	if (speed == 0)
+	{
+		Bug("ma_speed called, but no number key pressed.");
+		return D_O_K;
+	}
+	ns.settings.game_speed = speed;
+	return D_O_K;
+}
+
+//Menus before total adaption from original game
+MENU file_menu[]=
+{
+	{(char*)"&New Game\tCtrl+N", menu_callback, 0, 0, id(C_NewGame)},
+	{(char*)"New &Round\tCtrl+R", menu_callback, 0, 0, id(C_NewRound)},
+	{(char*)"&Quit\tCtrl+Q", menu_callback, 0, 0, id(C_Quit)},
+	{0,0,0,0,0}
+};
+
+MENU speed_menu[]=
+{
+	{(char*)"&1\t1", menu_callback, 0, 0, id(C_Speed1)},
+	{(char*)"&2\t2", menu_callback, 0, 0, id(C_Speed2)},
+	{(char*)"&3\t3", menu_callback, 0, 0, id(C_Speed3)},
+	{(char*)"&4\t4", menu_callback, 0, 0, id(C_Speed4)},
+	{(char*)"&5\t5", menu_callback, 0, 0, id(C_Speed5)},
+	{(char*)"&6\t6", menu_callback, 0, 0, id(C_Speed6)},
+	{(char*)"&7\t7", menu_callback, 0, 0, id(C_Speed7)},
+	{(char*)"&8\t8", menu_callback, 0, 0, id(C_Speed8)},
+	{(char*)"&9\t9", menu_callback, 0, 0, id(C_Speed9)},
+	{(char*)"1&0\t0", menu_callback, 0, 0, id(C_Speed10)},
+	{0,0,0,0,0}
+};
+
+static MENU menu[]=
+{
+	{(char*)"&File", 0, file_menu, 0, 0},
+	{(char*)"&Speed", 0, speed_menu, 0, 0},
+	{0,0,0,0,0}
+};
+
+//these callbacks have been rewritten to use functions in menu.c
+int ma_pause(void)
+{
+	ns.paused = !ns.paused;
+	update_menu_states(menu);
+	return D_O_K;
+}
+
+int ma_sound(void)
+{
+	ns.settings.sound = !ns.settings.sound;
+	update_menu_states(menu);
+	return D_O_K;
+}

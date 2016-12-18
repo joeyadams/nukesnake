@@ -1,0 +1,12 @@
+CHANGELOG
+
+Version        Change(s)
+
+0.0.2:         Created the ChangeLog
+               Converted source files to CRLF format (Windows-friendly).
+               Made internal changes involving event() and AI functions to pave the way for an AI.
+               Added icons for nukes, nuke ammo, and mine detonators (thus shifting the icon IDs) and adjusted tile_classes[] accordingly
+0.0.3:         Added an (incomplete) menu for both ports and made room for a status bar
+0.0.4:         Completed the menubar, implemented an (incomplete) status bar, and added NukeSnake 2.0 features (TODO:  Mine Detonators & testing)
+               Started a Qt 4 port.  It is currently very incomplete.
+               

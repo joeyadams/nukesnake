@@ -1,0 +1,5 @@
+When compiling for Qt,
+
+QMAKE_CFLAGS += -fsigned-char
+
+needs to be added to qt.pro if you create a new qt.pro.

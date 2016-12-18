@@ -1,0 +1,95 @@
+[Settings]
+Archive=1
+Pack=0
+Packed Variable=
+Project Name=sprrout
+GCC Switches=-Os -Wall -W -Wwrite-strings -ffunction-sections -fdata-sections
+Assembler Switches=-g -t
+GNU Assembler Switches=
+Debug Info=0
+Standard Library=1
+Command Line=
+Post-Build Process=
+Use Data Variable=0
+Data Variable=
+Copy Data Variable=1
+Copy Data Variable if Archived=1
+Optimize NOPs=1
+Optimize Returns=1
+Optimize Branches=1
+Optimize Moves=1
+Optimize Tests=1
+Optimize Calculations=1
+Remove Unused Sections=1
+Binary Output=0
+Fargo=0
+Flash OS=0
+Cut Unused Ranges=1
+Reorder Sections=1
+Merge Constants=1
+Initialize BSS=1
+
+[Library Options]
+Use TI-89=1
+Use TI-92 Plus=1
+Use V200=1
+Optimize Calc Consts=0
+Use Kernel=0
+Use PreOS=0
+Minimum AMS Version Defined=1
+Minimum AMS Version=1.00
+Unofficial OS Support=0
+Reloc Format=AMS
+ROM Call Format=Direct
+BSS Ref Format=Kernel
+Data Ref Format=Kernel
+Use F-Line Jumps=0
+Use 4-Byte F-Line Jumps=0
+Use Internal F-Line Emulator=0
+Use Return Value=0
+Enable Error Return=0
+Save Screen=1
+Optimize ROM Calls=0
+
+[File Editing]
+Open File=/home/joeyadams/tigcc-projects/nukesnake/spritelib/Sprite8RPLC.s
+
+[Included Files]
+GNU Assembler File 1=Sprite8.s
+GNU Assembler File 2=Sprite8XOR.s
+GNU Assembler File 3=Sprite8OR.s
+GNU Assembler File 4=Sprite8AND.s
+GNU Assembler File 5=Sprite8RPLC.s
+GNU Assembler File 6=Sprite8_B.s
+GNU Assembler File 7=ClipSprite8.s
+GNU Assembler File 8=ClipSprite8XOR.s
+GNU Assembler File 9=ClipSprite8OR.s
+GNU Assembler File 10=ClipSprite8AND.s
+GNU Assembler File 11=ClipSprite8RPLC.s
+GNU Assembler File 12=ClipSprite8_B.s
+GNU Assembler File 13=Sprite16.s
+GNU Assembler File 14=Sprite16XOR.s
+GNU Assembler File 15=Sprite16OR.s
+GNU Assembler File 16=Sprite16AND.s
+GNU Assembler File 17=Sprite16RPLC.s
+GNU Assembler File 18=Sprite16_B.s
+GNU Assembler File 19=ClipSprite16.s
+GNU Assembler File 20=ClipSprite16XOR.s
+GNU Assembler File 21=ClipSprite16OR.s
+GNU Assembler File 22=ClipSprite16AND.s
+GNU Assembler File 23=ClipSprite16RPLC.s
+GNU Assembler File 24=ClipSprite16_B.s
+GNU Assembler File 25=Sprite32.s
+GNU Assembler File 26=Sprite32XOR.s
+GNU Assembler File 27=Sprite32OR.s
+GNU Assembler File 28=Sprite32AND.s
+GNU Assembler File 29=Sprite32RPLC.s
+GNU Assembler File 30=Sprite32_B.s
+GNU Assembler File 31=ClipSprite32.s
+GNU Assembler File 32=ClipSprite32XOR.s
+GNU Assembler File 33=ClipSprite32OR.s
+GNU Assembler File 34=ClipSprite32AND.s
+GNU Assembler File 35=ClipSprite32RPLC.s
+GNU Assembler File 36=ClipSprite32_B.s
+Header File 1=spritelib.h
+

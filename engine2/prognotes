@@ -1,0 +1,5 @@
+There are three types of controllers:
+
+	Keyboard:  The game engine is repeatedly told the state of keys pressed, and the engine sorts this out.
+	AI:  The game engine's AI decides on the actions of the tank, requiring no interface with the frontend.
+	Net:  The player is connected to the game 

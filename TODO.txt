@@ -1,0 +1,5 @@
+Fix nuke and mine detonator behavior if it is inconsistent with original game.
+Make mine detonators work
+Support multiple nuke radii (low priority)
+
+TODO CLOSING 20071203:  Follow above steps.  Add corresponding menus to TIGCC and bring both tigcc and allegro versions to parity.

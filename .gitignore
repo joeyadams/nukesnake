@@ -1,0 +1,20 @@
+*.o
+*.exe
+
+/allegro/nukesnake
+/qt/nukesnake
+
+/ecere/.configs
+/ecere/debug/
+/ecere/nukesnake-Linux-Debug.Makefile
+/ecere/nukesnake-Debug.Makefile
+
+# Ecere workspace
+*.ews
+
+/tigcc/ns.89z
+/tigcc/ns.9xz
+/tigcc/ns.v2z
+
+# Vim swap files
+*.sw[nop]
