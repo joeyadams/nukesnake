@@ -17,7 +17,7 @@ all: $(PROG)
 	$(COMPILE_C) $(LIBHEADERS) $< -o $@
 
 $(PROG): $(OBJECTS)
-	$(CC) $(LIBS) $(OBJECTS) -o $@
+	$(CC) $(OBJECTS) $(LIBS) -o $@
 
 clean:
 	-$(RM) $(OBJECTS)
