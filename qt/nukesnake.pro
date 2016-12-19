@@ -3,12 +3,15 @@
 ######################################################################
 
 TEMPLATE = app
-TARGET = 
+TARGET = nukesnake
 DEPENDPATH += .
 INCLUDEPATH += .
 
 #Added by Joey
 QMAKE_CFLAGS += -fsigned-char
+
+QT += core gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 # Input
 HEADERS += ../engine/ai.h \

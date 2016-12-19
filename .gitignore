@@ -16,5 +16,7 @@
 /tigcc/ns.9xz
 /tigcc/ns.v2z
 
+/qt/nukesnake.pro.user
+
 # Vim swap files
 *.sw[nop]
