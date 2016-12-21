@@ -1,7 +1,7 @@
 PROG = nukesnake
 
 CC = gcc
-CFLAGS = -c -g -Os -Wall -W -Wwrite-strings -Wpointer-arith -fsigned-char
+CFLAGS = -c -g -Os -Wall -W -Wwrite-strings -Wpointer-arith
 LIBS = `allegro-config release --libs` -lm
 LIBHEADERS = `allegro-config release --cflags`
 

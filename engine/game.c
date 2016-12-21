@@ -133,10 +133,10 @@ void _move_coord(unsigned short *xo, unsigned short *yo, short direction)
 
 unsigned long count_empty_spaces(void)
 {
-	const char *board=ns.board;
-	const char *overlay=ns.overlay;
-	unsigned long count=ns.width*ns.height;
-	unsigned long ret=0;
+	const signed char *board = ns.board;
+	const signed char *overlay = ns.overlay;
+	unsigned long count = ns.width*ns.height;
+	unsigned long ret = 0;
 	for (;count--;board++,overlay++)
 		if (!*board && *overlay<0)
 			ret++;
@@ -144,10 +144,10 @@ unsigned long count_empty_spaces(void)
 }
 
 //This function will return a non-empty space if no empty spaces are available, otherwise it will randomly pick a space
-char *find_empty_space(void)
+signed char *find_empty_space(void)
 {
-	const char *board = ns.board;
-	const char *overlay = ns.overlay;
+	signed char *board = ns.board;
+	signed char *overlay = ns.overlay;
 	unsigned long count = ns.width*ns.height;
 	unsigned long empty_count;
 	unsigned long selected;
@@ -157,19 +157,19 @@ char *find_empty_space(void)
 	{
 		Glitch("No empty spaces available; writing over the topleft tile.");
 			//You would have to have a LOT of bullets flying around or have all the tiles filled up for this to happen.
-		return (char*)board;
+		return board;
 	}
 	selected = rand_ulong(empty_count);
 	
 	for (;count--;board++,overlay++)
 		if (!*board && *overlay<0 && !selected--)
-			return (char*)board;
+			return board;
 	
 	Bug("find_empty_space loop fell through.");
-	return (char*)ns.board;
+	return ns.board;
 }
 
-static char effect_frame_icon(NS_Effect *obj)
+static signed char effect_frame_icon(NS_Effect *obj)
 {
 	switch (obj->type)
 	{
@@ -266,9 +266,9 @@ static void setup_board(unsigned short width, unsigned short height)
 		Fatal("Board size %ux%u could not be allocated.",width,height);
 		exit(-1);
 	}
-	memset(ns.board,0,width*height);
-	memset(ns.board+width*height,Floor,width*height);
-	memset(ns.overlay,-1,width*height);
+	memset(ns.board, Floor, width*height);
+	memset(ns.board+width*height, Floor, width*height);
+	memset(ns.overlay, -1, width*height);
 	ns.width=width;
 	ns.height=height;
 	
@@ -311,7 +311,7 @@ static void explode(unsigned short x, unsigned short y, short trigger_direction)
 // (unless it's a player respawning)
 static void destroy_cell(unsigned short x, unsigned short y)
 {
-	char *tile;
+	signed char *tile;
 	short tile_type;
 	NS_Player *p;
 	NS_Bullet *b;
@@ -451,7 +451,7 @@ static short bounce(unsigned short *x, unsigned short *y, char *direction)
 	return *direction;
 }
 
-static char tail_icon(NS_Player *obj)
+static signed char tail_icon(NS_Player *obj)
 {
 	return obj->icon-BluePiece+BlueTail;
 }
@@ -650,7 +650,7 @@ static void update_player_direction(NS_Player *obj)
 
 static void update_player(NS_Player *obj)
 {
-	char tile; //tile the player's running into right now
+	signed char tile; //tile the player's running into right now
 	short postdir;
 	char old_type;
 	NS_Player *p;
@@ -681,7 +681,7 @@ bounceback:
 	
 	if (tile!=Water && ns.settings.explosion_blocks)
 	{
-		char c = cell_overlay(obj->x,obj->y);
+		signed char c = cell_overlay(obj->x,obj->y);
 		if (c>=0)
 		{
 			NS_Effect *e = find_effect(obj->x,obj->y,NULL);
@@ -801,7 +801,7 @@ bounceback:
 
 static void update_bullet(NS_Bullet *obj)
 {
-	char tile; //tile the player's running into right now
+	signed char tile; //tile the player's running into right now
 	char bullet_type = obj->type; //to compensate for when obj->type is set to 0
 	short postdir;
 	NS_Player *p;
@@ -819,7 +819,7 @@ bounceback:
 	
 	if (ns.settings.explosion_blocks)
 	{
-		char c = cell_overlay(obj->x,obj->y);
+		signed char c = cell_overlay(obj->x,obj->y);
 		if (c>=0)
 		{
 			NS_Effect *e = find_effect(obj->x,obj->y,NULL);
@@ -1277,9 +1277,9 @@ void NS_schedule_redraw(void)
 short NS_draw(void)
 {
 	unsigned short x,y;
-	const char *board=ns.board;
-	const char *overlay=ns.overlay;
-	char *actual=ns.board+ns.width*ns.height;
+	const signed char *board = ns.board;
+	const signed char *overlay = ns.overlay;
+	signed char *actual = ns.board + ns.width*ns.height;
 	short ret=0;
 	
 	if (!redraw_scheduled)
@@ -1288,7 +1288,7 @@ short NS_draw(void)
 	for (y=0; y<ns.height; y++)
 	for (x=0; x<ns.width;  x++, board++, overlay++, actual++)
 	{
-		char thistile = *overlay<0 ? *board : *overlay;
+		signed char thistile = *overlay<0 ? *board : *overlay;
 			//thistile = the board tile unless the corresponding overlay tile is used
 		if (*actual != thistile)
 		{

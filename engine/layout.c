@@ -154,7 +154,7 @@ const char *micro_testing_board_mines=
 	"WWWWWWWWWWWWWWWWWWWW"
 };
 
-static char letter_to_tile(char c)
+static signed char letter_to_tile(char c)
 {
 	switch (c)
 	{
@@ -183,7 +183,7 @@ static char letter_to_tile(char c)
 
 static void setup_testing_board(const char *init)
 {
-	char *board = ns.board;
+	signed char *board = ns.board;
 	unsigned long count = ns.width*ns.height;
 	for (;count--;init++, board++)
 		*board = letter_to_tile(*init);
@@ -204,10 +204,10 @@ void InitMap(void)
 	long total_squares;
 	unsigned short x, y;
 	long map_index;
-	char there; //referencing a member of ns.board
+	signed char there; //referencing a member of ns.board
 	int average, delta;
 	coord cluster_loc, cluster_size;
-	char *board = ns.board;
+	signed char *board = ns.board;
 	
 	total_squares = ns.width * ns.height;
 	
@@ -249,7 +249,7 @@ void InitMap(void)
 		//set terrain based on altitude
 		for (i=0;i<total_squares;i++)
 		{
-			char tile = board[i];
+			signed char tile = board[i];
 			#if SMALL_DEVICE==1
 			tile*=2; //diversify terrain
 			#endif
@@ -316,7 +316,7 @@ void InitMap(void)
 				//grow a swamp, forest, or rock garden
 				if (!rand_ulong(25))
 				{
-					char selections[4] = {Coal, Swamp, Tree, Water};
+					signed char selections[4] = {Coal, Swamp, Tree, Water};
 					there = selections[rand_ulong(4)];
 				}
 			}
@@ -462,7 +462,7 @@ void layout(void)
 {
 	InitMap();
 	return;
-	char *ptr;
+	signed char *ptr;
 	//Create border
 	if (ns.settings.walls)
 	{

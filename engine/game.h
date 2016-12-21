@@ -72,14 +72,14 @@ static inline void NS_redraw(void)
 
 struct NS
 {
-	char *board; //board==NULL means there is no game open right now
+	signed char *board; //board==NULL means there is no game open right now
 		//The board's data consists of two parts, each width*height bytes
 			//The current half is the cells the game engine will write to in order to request draws of cells
 			//The actual half is what is drawn to the screen at the last redraw
 		//Both board halves are used in NS_draw in order to bring the actual half up to date
 	unsigned short width;
 	unsigned short height;
-	char *overlay; //This is where explosions and respawn animations are drawn
+	signed char *overlay; //This is where explosions and respawn animations are drawn
 	struct NS_Settings
 	{
 		unsigned short
@@ -100,12 +100,12 @@ struct NS
 		char type; //Any of PlayerTypes or 0 for hole
 		char direction;
 		unsigned short x,y;
-		char covering; //The tile this object replaced to be drawn at (x,y).  It will restore this tile when it moves
+		signed char covering; //The tile this object replaced to be drawn at (x,y).  It will restore this tile when it moves
 		char phase;
-		char icon; //Any of TileTypes
+		signed char icon; //Any of TileTypes
 		char alive;
 		char has_tail;
-		char fire_phase; //counts down, <=0 means the player can fire right now (minimum is -bullet_maxphase, after-fire is +bullet_maxphase)
+		signed char fire_phase; //counts down, <=0 means the player can fire right now (minimum is -bullet_maxphase, after-fire is +bullet_maxphase)
 		char trudge; //number of updates to wait before player can move
 		unsigned short bullet_count; //only matters if settings.bullet_ammo==1
 		unsigned short rocket_count; //only matters if settings.rocket_ammo==1
@@ -123,7 +123,7 @@ struct NS
 		char type; //Any of BulletTypes or 0 for hole
 		char direction;
 		unsigned short x,y;
-		char covering; //see description in NS_Player::covering
+		signed char covering; //see description in NS_Player::covering
 		char phase; //counts down
 	} bullets[BULLET_MAX];
 	struct NS_Effect
