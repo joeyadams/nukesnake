@@ -46,23 +46,27 @@ void ai_newround(NS_Player *player)
 
 void ai_think(NS_Player *player)
 {
-	player=player; //to shut up the warnings
+	(void)player;
 }
 
 short ai_get_direction(NS_Player *player)
 {
-	player=player; //to shut up the warnings
+	(void)player;
 	return 1+rand_ulong(8);
 }
 
 short ai_get_fire(NS_Player *player)
 {
-	player=player; //to shut up the warnings
+	(void)player;
 	return !rand_ulong(100);
 }
 
 void ai_event(NS_Player *receiver, short type, short param, short player, unsigned short x, unsigned short y)
 {
-	type=param=player=x=y; //to shut up the warnings
-	receiver=NULL; //ditto
+    (void)receiver;
+    (void)type;
+    (void)param;
+    (void)player;
+    (void)x;
+    (void)y;
 }

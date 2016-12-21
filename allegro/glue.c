@@ -137,11 +137,11 @@ void ClearPlayerDirKeys(void)
 
 void GlueEvent(short type, short param, short player, unsigned short x, unsigned short y)
 {
-	//to shut up the compiler warnings
-	x=y;
-	param=y;
-	player=y;
-	
+    (void)param;
+    (void)player;
+    (void)x;
+    (void)y;
+
 	switch (type)
 	{
 		case EV_Explosion:

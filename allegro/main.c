@@ -27,6 +27,7 @@
 #include "game.h"
 #include "glue.h"
 #include "menu.h"
+#include <stdint.h>
 #include <time.h>
 
 DATAFILE *dat;
@@ -156,7 +157,6 @@ short read_keys(void)
 static void game_idle(void)
 {
 	unsigned long steps;
-	unsigned long fc_max = 2520 / ns.settings.game_speed;
 
 	// Wait until it's time to draw the next frame.
 	// Poll game keys while we wait.
@@ -205,10 +205,12 @@ static int d_menu_proc_wrapper(int msg, DIALOG *d, int c)
 
 static int d_game_proc(int msg, DIALOG *d, int c)
 {
-	d=d; //to shut up the compiler warning
-	c=c;
+	(void)d;
+	(void)c;
+
 	if(close_button_pressed)
 		return D_CLOSE;
+
 	switch (msg)
 	{
 		case MSG_IDLE:
@@ -357,7 +359,7 @@ static void update_menu_states(MENU *menu)
 		return;
 	for (;menu->text;menu++)
 	{
-		short game_state = NS_get_command_state((int)menu->dp);
+		short game_state = NS_get_command_state((uintptr_t)menu->dp);
 		int menu_state = 0;
 		if (game_state & M_Disabled)
 			menu_state |= D_DISABLED;
@@ -373,7 +375,7 @@ static void update_menu_states(MENU *menu)
 int menu_callback(void)
 {
 	//printf("Menu callback (command %d)\n",(int)active_menu->dp);
-	short command = (int)active_menu->dp;
+	short command = (uintptr_t)active_menu->dp;
 	if (command == C_Quit)
 		return D_CLOSE;
 	NS_command(command);
