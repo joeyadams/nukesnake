@@ -94,7 +94,7 @@ struct NS
 		unsigned char bullet_speed; //speed in relation to player (should be 2...6)
 	} settings;
 	unsigned short phase; //counts down
-	char paused;
+	unsigned short paused:1, player_dying:1, reset_scheduled:1;
 	struct NS_Player
 	{
 		char type; //Any of PlayerTypes or 0 for hole

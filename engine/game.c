@@ -238,6 +238,7 @@ static void respawn_player(NS_Player *player, short wait)
 	e->respawn = player - ns.players;
 	if (!wait)
 	{
+		// Skip the dying part of the effect and only show the player spawning.
 		e->frame-=16;
 		cell_overlay(e->x, e->y) = effect_frame_icon(e);
 	}
@@ -408,7 +409,12 @@ static void kill_player(NS_Player *player,short mod)
 	UpdateScores();
 	respawn_player(player, 1);
 	event(EV_PlayerKilled, mod, player-ns.players, player->x, player->y);
-	//explode(player->x, player->y, player->direction); //silliness
+
+    if (!ns.settings.total_war)
+        ns.player_dying = 1;
+
+    // Uncomment for silliness (to make players explode when they die).
+    //explode(player->x, player->y, player->direction);
 }
 
 static void kill_bullet(NS_Bullet *obj)
@@ -946,10 +952,19 @@ static void update_effect(NS_Effect *obj)
 	{
 		if (obj->type == ET_Respawn && obj->frame == 11)
 		{
-			cell_overlay(obj->x, obj->y) = -1; //the effect is moving, so we need to make this spot transparent
-			unsigned long position = find_empty_space()-ns.board;
-			obj->x = position % ns.width;
-			obj->y = position / ns.width;
+			if (ns.settings.total_war)
+			{
+				// Move the respawn effect to the player's new position.
+				cell_overlay(obj->x, obj->y) = -1; //the effect is moving, so we need to make this spot transparent
+				unsigned long position = find_empty_space()-ns.board;
+				obj->x = position % ns.width;
+				obj->y = position / ns.width;
+			}
+			else
+			{
+				// Schedule a reset (don't reset now while we're looping through stuff).
+				ns.reset_scheduled = 1;
+			}
 		}
 		cell_overlay(obj->x, obj->y) = effect_frame_icon(obj);
 	}
@@ -1187,6 +1202,7 @@ void NS_newgame(unsigned short width,unsigned short height, short gametype)
 	ClearAllKeys();
 	ns.phase=59;
 	ns.paused=0;
+	ns.player_dying=0;
 	clear_objects();
 	setup_board(width,height);
 	switch (gametype)
@@ -1223,6 +1239,8 @@ void NS_newround(unsigned short width,unsigned short height)
 	ClearAllKeys();
 	ns.phase=59;
 	ns.paused=0;
+	ns.reset_scheduled=0;
+	ns.player_dying=0;
 	
 	{
 		NS_Player *p = ns.players;
@@ -1256,27 +1274,39 @@ short NS_frame(void)
 	
 	if (update_effects())
 		something_updated=1;
-	if (update_bullets())
-		something_updated=1;
-	if (check_fires())
-		something_updated=1;
-	if (!ns.phase--)
+
+	// Only update effects (which includes player blinking) when a player has died.
+	if (!ns.player_dying)
 	{
-		ns.phase=59;
-		players_moved_dont_fire(); //when the players move, that may keep them from being able to fire (because they'll end up shooting their own bullet)
-		something_updated=1;
-		update_players();
-		ClearPlayerDirKeys();
-	}
-	{
-		NS_Player *p = ns.players;
-		unsigned short count = PLAYER_MAX;
-		for (;count--;p++)
+		if (update_bullets())
+			something_updated=1;
+		if (check_fires())
+			something_updated=1;
+		if (!ns.phase--)
 		{
-			if (p->type == PT_AI)
-				ai_think(p);
+			ns.phase=59;
+			players_moved_dont_fire(); //when the players move, that may keep them from being able to fire (because they'll end up shooting their own bullet)
+			something_updated=1;
+			update_players();
+			ClearPlayerDirKeys();
+		}
+		{
+			NS_Player *p = ns.players;
+			unsigned short count = PLAYER_MAX;
+			for (;count--;p++)
+			{
+				if (p->type == PT_AI)
+					ai_think(p);
+			}
 		}
 	}
+
+	if (ns.reset_scheduled)
+	{
+		ns.reset_scheduled = 0;
+		NS_newround(ns.width, ns.height);
+	}
+
 	if (something_updated)
 		NS_draw();
 	
