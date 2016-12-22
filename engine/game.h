@@ -225,7 +225,7 @@ enum EventTypes
 
 enum MeansOfDeath
 {
-	MOD_Player, MOD_Bullet, MOD_Rocket, MOD_Nuke, MOD_Explosion, MOD_NukeRadius, MOD_Mine, MOD_Coal, MOD_Wall, MOD_Tail, MOD_ShotHimself
+	MOD_Player, MOD_Bullet, MOD_Rocket, MOD_Nuke, MOD_Explosion, MOD_NukeRadius, MOD_Mine, MOD_Coal, MOD_Wall, MOD_Tail, MOD_ShotHimself, MOD_MineDetonator
 };
 
 #ifdef __cplusplus

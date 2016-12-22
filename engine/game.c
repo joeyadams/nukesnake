@@ -368,15 +368,22 @@ static void destroy_cell(unsigned short x, unsigned short y)
 	switch (tile_type)
 	{
 		case Mine:
-		case MineDetonator:
 			explode(x,y,0);
 			break;
+
+		// Note: If mine detonator is hit by nuke directly, it will trigger
+		// all mines to nuclear explode.  But if it's merely in the radius
+		// of a nuclear explosion, it will just be destroyed without triggering.
+
 		default:
 			new_effect(ET_Explosion, x, y);
 	}
 }
 
-//Nuke explosion (duh)
+// Destroy everything within a few pixels' radius.
+// Players are killed, bullets are destroyed, and explosions are replaced.
+// Mines within the blast radius are detonated.
+// Mine detonators within the blast radius are destroyed but not activated.
 static void explode_nuclear(unsigned short x, unsigned short y)
 {
 	unsigned short ix,iy;
@@ -398,6 +405,34 @@ static void explode_nuclear(unsigned short x, unsigned short y)
 			move_coord(ix, iy, Right);
 		}
 		move_coord(ix, iy, Down);
+	}
+}
+
+static void detonate_all_mines(short nuclear)
+{
+	unsigned short x, y;
+	unsigned short width = ns.width, height = ns.height;
+	signed char *tile = ns.board;
+
+	for (y = 0; y < height; y++)
+	for (x = 0; x < width; x++, tile++)
+	{
+		if (*tile == Mine)
+		{
+			if (nuclear)
+			{
+				// This will make the mine go off too.
+				explode_nuclear(x, y);
+			}
+			else
+			{
+				// Need to remove the mine explicitly, since explode doesn't remove
+				// whatever's under it if I remember correctly.
+				*tile = Floor;
+
+				explode(x, y, 0);
+			}
+		}
 	}
 }
 
@@ -779,9 +814,21 @@ bounceback:
 			event(EV_NukePickedUp, 0, obj-ns.players, obj->x, obj->y);
 			return;
 		case Mine:
+			obj->covering = Floor;
+			kill_player(obj, MOD_Mine);
+			return;
 		case Coal:
 			obj->covering = Floor;
 			kill_player(obj, MOD_Coal);
+			return;
+		case MineDetonator:
+			obj->covering = Floor;
+
+			// Kill player before detonating mines to prevent player respawn from being duplicated.
+			kill_player(obj, MOD_MineDetonator);
+
+			detonate_all_mines(0);
+
 			return;
 		case Tree:
 		case Swamp:
@@ -911,11 +958,8 @@ bounceback:
 				explode(obj->x, obj->y,obj->direction);
 			return;
 		case MineDetonator:
-			obj->type = 0;
-			cell(obj->x, obj->y) = Floor;
-			explode(obj->x, obj->y,obj->direction);
-			//if (bullet_type == BT_Nuke)
-			//	//TODO:  Detonate all the mines
+			kill_bullet(obj);
+			detonate_all_mines(bullet_type == BT_Nuke);
 			return;
 		case Wall:
 			if (ns.settings.rubber_walls)
