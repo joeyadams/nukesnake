@@ -346,6 +346,7 @@ static void destroy_cell(unsigned short x, unsigned short y)
 			break;
 		case TC_Bullet:
 			b = find_bullet(x, y, NULL);
+			if (!b)
 				break;
 			b->type = 0;
 			break;
