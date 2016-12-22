@@ -76,13 +76,29 @@ const char dir_yflip[9]=
 const char tile_class[TILE_TYPE_COUNT]=
 {
 	TC_Floor,
+
+	// BluePiece, RedPiece,
 	TC_Player, TC_Player,
+
+	// BulletH, BulletV, BulletF, BulletB,
 	TC_Bullet, TC_Bullet, TC_Bullet, TC_Bullet,
+
+	// RocketH, RocketV, RocketF, RocketB,
 	TC_Bullet, TC_Bullet, TC_Bullet, TC_Bullet,
+
+	// NukeH, NukeV, NukeF, NukeB,
 	TC_Bullet, TC_Bullet, TC_Bullet, TC_Bullet,
+
+	// Explode1, Explode2,
 	TC_Explosion, TC_Explosion, //no normal tiles should be set to the explosion icons, but the overlay can (and often is)
+
+	// AmmoPack, RocketPack, NukePack,
 	TC_Other, TC_Other, TC_Other,
+
+	// Mine, MineDetonator, Coal, Tree, Wall, Water, Swamp,
 	TC_Other, TC_Other, TC_Other, TC_Other, TC_Other, TC_Other, TC_Other,
+
+	// BlueTail, RedTail,
 	TC_Tail, TC_Tail
 };
 
