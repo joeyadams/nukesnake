@@ -887,6 +887,7 @@ bounceback:
 	
 	tile = obj->covering;
 	
+	// If spam protection is on, explosion effects swallow bullets.
 	if (ns.settings.explosion_blocks)
 	{
 		signed char c = cell_overlay(obj->x,obj->y);
@@ -897,6 +898,11 @@ bounceback:
 			{
 				obj->type = 0;
 				cell(obj->x, obj->y) = obj->covering;
+
+				// Nukes don't trigger other nukes when we explode, so the smoke
+				// shouldn't trigger a nuke either.  Though if nukes triggered other nukes,
+				// one interesting side effect is that shooting a stream of nukes would result
+				// in a big fireball when one of the nukes blows up.
 				new_effect(ET_Explosion, obj->x, obj->y);
 			}
 			return;
@@ -922,17 +928,33 @@ bounceback:
 				kill_player(p, MOD_Bullet+bullet_type-1);
 			return;
 		case TC_Bullet:
+		{
+			// Find and remove the other bullet.
 			b=find_bullet(obj->x, obj->y, obj);
 			if (!b) //If this happens, it's due to a glitch in the game logic
 			{
 				obj->covering = Floor;
 				return;
 			}
+
+			char biggest_bullet_type = obj->type;
+			if (biggest_bullet_type < b->type)
+				biggest_bullet_type = b->type;
+
 			b->type = 0;
 			cell(obj->x, obj->y) = b->covering;
 			obj->type = 0;
-			new_effect(ET_Explosion, obj->x, obj->y);
+
+			// If a nuke collides with another bullet (which may or may not be a nuke),
+			// it's a nuclear explosion.  If a rocket collides with a bullet or rocket,
+			// it's a regular explosion so it doesn't blow up in either shooter's face.
+			if (biggest_bullet_type == BT_Nuke)
+				explode_nuclear(obj->x, obj->y);
+			else
+				new_effect(ET_Explosion, obj->x, obj->y);
+
 			return;
+		}
 		case TC_Tail:
 			kill_bullet(obj);
 			return;
@@ -948,6 +970,10 @@ bounceback:
 		case Coal:
 		case Tree:
 			kill_bullet(obj);
+			return;
+		case NukePack:
+			// Shooting nuke ammo causes a nuclear explosion.
+			explode_nuclear(obj->x, obj->y);
 			return;
 		case Mine:
 			obj->type = 0;
