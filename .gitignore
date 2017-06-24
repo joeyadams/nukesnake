@@ -17,6 +17,7 @@
 /tigcc/ns.v2z
 
 /qt/nukesnake.pro.user
+/qt/.qmake.stash
 
 # Vim swap files
 *.sw[nop]
