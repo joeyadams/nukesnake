@@ -21,3 +21,6 @@
 
 # Vim swap files
 *.sw[nop]
+
+tags
+cscope.out
