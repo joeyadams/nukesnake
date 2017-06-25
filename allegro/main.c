@@ -36,6 +36,9 @@ short sound_tried;
 SAMPLE *sounds[S_TypeCount];
 static MENU menu[];
 
+static NS ns_data;
+static NS *ns = &ns_data;
+
 static const char *sound_names[S_TypeCount]=
 {
 	"ammo.wav",
@@ -85,7 +88,7 @@ void play_sound(short s)
 		Bug("Sound index %d out of range.",s);
 		return;
 	}
-	if (!ns.settings.sound)
+	if (!ns->settings.sound)
 		return;
 	else if (!sound_tried)
 		load_sounds();
@@ -136,18 +139,18 @@ short read_keys(void)
 	{
 		if (key[right_dir_keys[i]] || key[right_dir_keys_alt[i]])
 		{
-			AcceptDirKey(PT_Right, i, 0);
+			AcceptDirKey(PT_Right, i, ns->settings.diagonals, 0);
 		}
 		if (key[left_dir_keys[i]])
 		{
-			AcceptDirKey(PT_Left, i, 0);
+			AcceptDirKey(PT_Left, i, ns->settings.diagonals, 0);
 		}
 	}
 	for (i=0;i<10;i++)
 	{
-		if (key[speed_keys[i]] && ns.settings.game_speed != i+1)
+		if (key[speed_keys[i]] && ns->settings.game_speed != i+1)
 		{
-			ns.settings.game_speed = i+1;
+			ns->settings.game_speed = i+1;
 			update_menu_states(menu);
 		}
 	}
@@ -175,7 +178,7 @@ static void game_idle(void)
 	// Number of times to update the game state.
 	// frame_counter is usually 1 here, but if the game is running slow,
 	// we may have catching up to do.
-	steps = frame_counter * ns.settings.game_speed;
+	steps = frame_counter * ns->settings.game_speed;
 
 	// Reset counter for next frame.
 	frame_counter = 0;
@@ -187,10 +190,10 @@ static void game_idle(void)
 
 	// Advance the game state.
 	while (steps--)
-		NS_frame();
+		NS_frame(ns);
 
 	// Draw the game state after these updates.
-	NS_redraw();
+	NS_redraw(ns);
 }
 
 long draw_count=0;
@@ -269,9 +272,9 @@ int main(void)
 	
 	clear_to_color(screen, makecol(255,255,255));
 	
-	NS_init();
+	NS_init(ns);
 	
-	if (ns.settings.sound)
+	if (ns->settings.sound)
 		load_sounds();
 	
 	update_menu_states(menu);
@@ -287,11 +290,11 @@ int main(void)
 	LOCK_FUNCTION(close_button_handler);
 	set_close_button_callback(close_button_handler);
 	
-	NS_newgame(w/16, h/16-2, C_NewGame); //start with a 2 player game
+	NS_newgame(ns, w/16, h/16-2, C_NewGame); //start with a 2 player game
 	
 	do_dialog(game_dialog, -1);
 	
-	NS_uninit();
+	NS_uninit(ns);
 	
 	unload_datafile(dat);
 	destroy_sounds();
@@ -311,25 +314,25 @@ END_OF_MAIN()
 
 int ma_newgame(void)
 {
-	NS_command(C_NewGame);
+	NS_command(ns, C_NewGame);
 	return D_O_K;
 }
 
 int ma_newgame_1player(void)
 {
-	NS_command(C_NewGame_1Player);
+	NS_command(ns, C_NewGame_1Player);
 	return D_O_K;
 }
 
 int ma_demo(void)
 {
-	NS_command(C_Demo);
+	NS_command(ns, C_Demo);
 	return D_O_K;
 }
 
 int ma_newround(void)
 {
-	NS_command(C_NewRound);
+	NS_command(ns, C_NewRound);
 	return D_O_K;
 }
 
@@ -340,13 +343,13 @@ int ma_quit(void)
 
 int ma_pause(void)
 {
-	NS_command(C_Pause);
+	NS_command(ns, C_Pause);
 	return D_O_K;
 }
 
 int ma_sound(void)
 {
-	NS_command(C_Sound);
+	NS_command(ns, C_Sound);
 	return D_O_K;
 }
 
@@ -359,7 +362,7 @@ static void update_menu_states(MENU *menu)
 		return;
 	for (;menu->text;menu++)
 	{
-		short game_state = NS_get_command_state((uintptr_t)menu->dp);
+		short game_state = NS_get_command_state(ns, (uintptr_t)menu->dp);
 		int menu_state = 0;
 		if (game_state & M_Disabled)
 			menu_state |= D_DISABLED;
@@ -378,7 +381,7 @@ int menu_callback(void)
 	short command = (uintptr_t)active_menu->dp;
 	if (command == C_Quit)
 		return D_CLOSE;
-	NS_command(command);
+	NS_command(ns, command);
 	update_menu_states(menu);
 	return D_O_K;
 }

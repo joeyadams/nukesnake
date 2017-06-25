@@ -181,10 +181,10 @@ static signed char letter_to_tile(char c)
 	return Floor;
 }
 
-static void setup_testing_board(const char *init)
+static void setup_testing_board(NS *ns, const char *init)
 {
-	signed char *board = ns.board;
-	unsigned long count = ns.width*ns.height;
+	signed char *board = ns->board;
+	unsigned long count = ns->width * ns->height;
 	for (;count--;init++, board++)
 		*board = letter_to_tile(*init);
 }
@@ -197,24 +197,24 @@ typedef struct coord
 //This function was translated from Pascal out of David Riggle's Win Snake 2.0
 //TODO:  Check division and modulus
 //TODO:  Change the 'try' keyword to something else
-void InitMap(void)
+void InitMap(NS *ns)
 {
 	long n,i,e,try;
 	int count;
 	long total_squares;
 	unsigned short x, y;
 	long map_index;
-	signed char there; //referencing a member of ns.board
+	signed char there; //referencing a member of ns->board
 	int average, delta;
 	coord cluster_loc, cluster_size;
-	signed char *board = ns.board;
+	signed char *board = ns->board;
 	
-	total_squares = ns.width * ns.height;
+	total_squares = ns->width * ns->height;
 	
 	memset(board,0,total_squares);
 	
 	//add fractal terrain
-	if (ns.settings.fractal_terrain)
+	if (ns->settings.fractal_terrain)
 	{
 		//rock (coal), swamp, trees, river, blank
 		//build fractal terrain map
@@ -228,12 +228,12 @@ void InitMap(void)
 		while (delta>0)
 		{
 			//perturb each square
-			for (i=ns.width+1; i<total_squares-ns.width-1;i++)
+			for (i=ns->width+1; i<total_squares-ns->width-1;i++)
 			{
 				//average surrounding squares
-				average = board[i-ns.width-1]+board[i-ns.width]+board[i-ns.width+1]+
+				average = board[i-ns->width-1]+board[i-ns->width]+board[i-ns->width+1]+
 				          board[i-1]+board[i]+board[i+1]+
-				          board[i+ns.width-1]+board[i+ns.width]+board[i+ns.width+1];
+				          board[i+ns->width-1]+board[i+ns->width]+board[i+ns->width+1];
 				average/=9;
 				//add random delta
 				if (rand32()&1)
@@ -270,19 +270,19 @@ void InitMap(void)
 	}
 	
 	//add linear terrain
-	if (ns.settings.linear_terrain)
+	if (ns->settings.linear_terrain)
 	{
 		//Random walk terrain
 		//pick a random spot & grow a river
 		for (n=0;n<2;n++) //once for trees, once for rivers
 		{
 			there = n?Tree:Water;
-			x = (rand_ulong(ns.width)+ns.width) / 3;
-			y = (rand_ulong(ns.height)+ns.height) / 3;
+			x = (rand_ulong(ns->width)+ns->width) / 3;
+			y = (rand_ulong(ns->height)+ns->height) / 3;
 			e = rand_ulong(total_squares);
 			for (i=0;i<e;i++)
 			{
-				map_index = y*ns.width + x;
+				map_index = y*ns->width + x;
 				board[map_index] = there;
 				board[map_index+1] = there;
 				switch (rand_ulong(4))
@@ -291,7 +291,7 @@ void InitMap(void)
 						break;
 					case 1:
 					case 2:
-						if (y<ns.height-2)
+						if (y<ns->height-2)
 							y++;
 						break;
 					case 3:
@@ -305,7 +305,7 @@ void InitMap(void)
 						break;
 					case 1:
 					case 2:
-						if (x<ns.width-2)
+						if (x<ns->width-2)
 							x++;
 						break;
 					case 3:
@@ -325,28 +325,28 @@ void InitMap(void)
 	
 	//set cluster size & location
 	//TODO:  Audit cluster size/location for potential buffer overruns
-	if (ns.settings.clusters)
+	if (ns->settings.clusters)
 	{
-		unsigned short min = ns.width;
-		if (ns.height<min)
-			min = ns.height;
+		unsigned short min = ns->width;
+		if (ns->height<min)
+			min = ns->height;
 		cluster_size.y = rand_ulong(min);
 		if (cluster_size.y == 0)
 			cluster_size.y = 1;
 		cluster_size.x = cluster_size.y;
-		cluster_loc.y = rand_ulong(ns.height - cluster_size.y);
-		cluster_loc.x = rand_ulong(ns.width - cluster_size.x);
+		cluster_loc.y = rand_ulong(ns->height - cluster_size.y);
+		cluster_loc.x = rand_ulong(ns->width - cluster_size.x);
 	}
 	else
 	{
 		cluster_loc.x = 0;
 		cluster_loc.y = 0;
-		cluster_size.x = ns.width;
-		cluster_size.y = ns.height;
+		cluster_size.x = ns->width;
+		cluster_size.y = ns->height;
 	}
 	
 	//add mines
-	if (ns.settings.mines)
+	if (ns->settings.mines)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of mines on blank ground (2% max)
@@ -362,7 +362,7 @@ void InitMap(void)
 				//modified by Joey Adams:  moved cluster_loc.x and cluster_loc.y outside of the random function for true clusters to happen
 				x = rand_ulong(cluster_size.x) + cluster_loc.x;
 				y = rand_ulong(cluster_size.y) + cluster_loc.y;
-				map_index = (long)y * (long)ns.width + (long)x;
+				map_index = (long)y * (long)ns->width + (long)x;
 				if (board[map_index] == Floor)
 				{
 					board[map_index] = Mine;
@@ -371,13 +371,13 @@ void InitMap(void)
 			}
 			
 			//make first mine the pulse generator if desired
-			if (i==0 && count>1 && ns.settings.mine_detonators)
+			if (i==0 && count>1 && ns->settings.mine_detonators)
 				board[map_index] = MineDetonator;
 		}
 	}
 	
 	//add ammo packs
-	if (ns.settings.bullet_ammo)
+	if (ns->settings.bullet_ammo)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of ammo packs (1% max)
@@ -391,14 +391,14 @@ void InitMap(void)
 			//modified by Joey Adams:  see the mines section
 			x = rand_ulong(cluster_size.x) + cluster_loc.x;
 			y = rand_ulong(cluster_size.y) + cluster_loc.y;
-			map_index = (long)y * (long)ns.width + (long)x;
+			map_index = (long)y * (long)ns->width + (long)x;
 			board[map_index] = AmmoPack;
 		}
 	}
 	
 	//add rocket packs
 	//modified by Joey Adams:  ammo works differently in this Nuke Snake implementation
-	if (ns.settings.rocket_ammo)
+	if (ns->settings.rocket_ammo)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of rockets (0.5% max)
@@ -412,13 +412,13 @@ void InitMap(void)
 			//modified by Joey Adams:  see the mines section
 			x = rand_ulong(cluster_size.x) + cluster_loc.x;
 			y = rand_ulong(cluster_size.y) + cluster_loc.y;
-			map_index = (long)y * (long)ns.width + (long)x;
+			map_index = (long)y * (long)ns->width + (long)x;
 			board[map_index] = RocketPack;
 		}
 	}
 	
 	//add nukes
-	if (ns.settings.nuke_ammo)
+	if (ns->settings.nuke_ammo)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of nukes (0.2% max)
@@ -431,23 +431,23 @@ void InitMap(void)
 			//modified by Joey Adams:  see the mines section
 			x = rand_ulong(cluster_size.x) + cluster_loc.x;
 			y = rand_ulong(cluster_size.y) + cluster_loc.y;
-			map_index = (long)y * (long)ns.width + (long)x;
+			map_index = (long)y * (long)ns->width + (long)x;
 			board[map_index] = NukePack;
 		}
 	}
 	
 	//add border
-   if (ns.settings.walls) {
+   if (ns->settings.walls) {
       map_index = 0;
-      for (y=1; y<=ns.height; y++)
+      for (y=1; y<=ns->height; y++)
       {
          board[map_index] = Wall;
-         map_index += ns.width-1;
+         map_index += ns->width-1;
          board[map_index] = Wall;
          map_index++;
       }
-      map_index = (ns.height-1) * ns.width;
-      for (x=1; x<=ns.width-2; x++)
+      map_index = (ns->height-1) * ns->width;
+      for (x=1; x<=ns->width-2; x++)
       {
          board[x] = Wall;
          board[map_index + x] = Wall;
@@ -458,26 +458,26 @@ void InitMap(void)
 //Set up the board
 //this function isn't burdened with positioning players
 //the board is completely cleared (i.e. only floor) when layout() is called
-void layout(void)
+void layout(NS *ns)
 {
-	InitMap();
+	InitMap(ns);
 	return;
 	signed char *ptr;
 	//Create border
-	if (ns.settings.walls)
+	if (ns->settings.walls)
 	{
 		short w;
 		short h;
-		w=ns.width-1;
-		ptr=ns.board;
+		w=ns->width-1;
+		ptr=ns->board;
 		do *ptr++=Wall; while (w--);
-		w=ns.width-1;
-		h=ns.height-2;
-		ptr+=ns.width*h;
+		w=ns->width-1;
+		h=ns->height-2;
+		ptr+=ns->width*h;
 		do *ptr++=Wall; while (w--);
-		w=ns.width-1;
-		h=ns.height-2;
-		ptr=ns.board;
+		w=ns->width-1;
+		h=ns->height-2;
+		ptr=ns->board;
 		do
 		{
 			*ptr=Wall;
@@ -485,8 +485,8 @@ void layout(void)
 			*ptr++=Wall;
 		} while (h--);
 	}
-	if (ns.width==50 && ns.height==36)
-		setup_testing_board(maze_testing_board);
-	if (ns.width==20 && ns.height==12)
-		setup_testing_board(micro_testing_board_less);
+	if (ns->width==50 && ns->height==36)
+		setup_testing_board(ns, maze_testing_board);
+	if (ns->width==20 && ns->height==12)
+		setup_testing_board(ns, micro_testing_board_less);
 }

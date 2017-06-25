@@ -102,11 +102,11 @@ short GetPlayerFire(short type) //PT_Right=1, PT_Left=2 (, PT_Network=3)
 //handles a directional keypress for a player (so that the right player's 4 and 8 will accumulate to be 7, for instance)
 //used by main.c
 //if diagonal_compat is set, non-diagonal keys can be combined for a diagonal result
-void AcceptDirKey(short type, short direction, short diagonal_compat)
+void AcceptDirKey(short type, short direction, bool diagonals, bool diagonal_compat)
 {
-	if (diagonal_compat && ns.settings.diagonals)
+	if (diagonal_compat && diagonals)
 		PlayerKeyData[type-1].dir = add_directions(PlayerKeyData[type-1].dir, direction);
-	else if (ns.settings.diagonals || !dir_isdiagonal(direction))
+	else if (diagonals || !dir_isdiagonal(direction))
 		PlayerKeyData[type-1].dir = direction;
 }
 
@@ -168,16 +168,16 @@ void GlueEvent(short type, short param, short player, unsigned short x, unsigned
 	}
 }
 
-void UpdateScores(void)
+void UpdateScores(NS *ns)
 {
 	const NS_Player *left, *right;
 	char buffer[256];
-	left = NS_find_player_by_type(PT_Left, NULL);
+	left = NS_find_player_by_type(ns, PT_Left, NULL);
 	if (!left)
-		left = NS_find_player_by_type(PT_AI, NULL);
-	right = NS_find_player_by_type(PT_Right, NULL);
+		left = NS_find_player_by_type(ns, PT_AI, NULL);
+	right = NS_find_player_by_type(ns, PT_Right, NULL);
 	if (!right)
-		right = NS_find_player_by_type(PT_AI, left);
+		right = NS_find_player_by_type(ns, PT_AI, left);
 	if (!left || !right)
 	{
 		Bug("Error finding left/right players to print score.");

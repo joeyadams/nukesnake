@@ -35,7 +35,7 @@ extern "C" {
 //Laying out the board is given its own source file because of the complexity associated with linear and cluster (a.k.a. fractal) terrain
 
 //Set up the board (this function isn't burdened with positioning players)
-void layout(void);
+void layout(NS *ns);
 
 #ifdef __cplusplus
 }

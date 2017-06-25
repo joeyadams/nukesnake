@@ -48,21 +48,21 @@ typedef struct NS_Effect NS_Effect;
 #include "glue.h"
 #include "menu.h"
 
-void NS_init(void);
-void NS_uninit(void);
-void NS_newgame(unsigned short width,unsigned short height, short gametype);
-void NS_newround(unsigned short width,unsigned short height);
-short NS_frame(void); //returns one of FrameStatus
-void NS_schedule_redraw(void);
-short NS_draw(void);
+void NS_init(NS *ns);
+void NS_uninit(NS *ns);
+void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gametype);
+void NS_newround(NS *ns, unsigned short width,unsigned short height);
+short NS_frame(NS *ns); //returns one of FrameStatus
+void NS_schedule_redraw();
+short NS_draw(NS *ns);
 
-NS_Player *NS_find_player_by_type(short type, const NS_Player *dont_pick);
+NS_Player *NS_find_player_by_type(NS *ns, short type, const NS_Player *dont_pick);
 	//the argument is 'dont_pick' instead of 'not' because 'not' is a C++ keyword
 
-static inline void NS_redraw(void)
+static inline void NS_redraw(NS *ns)
 {
 	NS_schedule_redraw();
-	NS_draw();
+	NS_draw(ns);
 }
 
 //None of the max values should be zero
@@ -139,7 +139,7 @@ struct NS
 	} effects[EFFECT_MAX];
 };
 
-extern NS ns;
+// TODO: Don't expose these variables in the header.
 
 #define dir_vec(dir) (_dir_vec[(int)(dir)])
 extern const signed char _dir_vec[][2];

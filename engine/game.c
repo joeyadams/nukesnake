@@ -32,8 +32,6 @@
 
 /*** Public Structures ***/
 
-NS ns;
-
 const signed char _dir_vec[][2]=
 {
 	{0,0}, //NoDirection
@@ -106,11 +104,11 @@ const char tile_class[TILE_TYPE_COUNT]=
 
 //type is one of enum EventTypes
 //param specifies in greater detail what happened (e.g. the means of death of a player or the type of explosion)
-//player is the ID of the player (i.e. player-ns.players, where player is of type NS_Player* )
+//player is the ID of the player (i.e. player-ns->players, where player is of type NS_Player* )
 //x and y are in case special effects surrounding events are implemented (they currently aren't used)
-static void event(short type, short param, short player, unsigned short x, unsigned short y)
+static void event(NS *ns, short type, short param, short player, unsigned short x, unsigned short y)
 {
-	NS_Player *p = ns.players;
+	NS_Player *p = ns->players;
 	unsigned short count = PLAYER_MAX;
 	
 	GlueEvent(type, param, player, x, y);
@@ -123,35 +121,35 @@ static void event(short type, short param, short player, unsigned short x, unsig
 	}
 }
 
-#define cell(x,y) (ns.board[(y)*ns.width+(x)])
-#define cell_overlay(x,y) (ns.overlay[(y)*ns.width+(x)])
-#define move_coord(x,y,direction) _move_coord(&(x), &(y), direction)
-void _move_coord(unsigned short *xo, unsigned short *yo, short direction)
+#define cell(x,y) (ns->board[(y)*ns->width+(x)])
+#define cell_overlay(x,y) (ns->overlay[(y)*ns->width+(x)])
+#define move_coord(x,y,direction) _move_coord(ns, &(x), &(y), direction)
+void _move_coord(NS *ns, unsigned short *xo, unsigned short *yo, short direction)
 {
 	short *x = (short*)xo;
 	short *y = (short*)yo;
 	*x += dir_vec(direction)[0];
 	*y += dir_vec(direction)[1];
 	if (*x < 0)
-		*x += ns.width;
-	else if (*x >= (short)ns.width)
-		*x -= ns.width;
+		*x += ns->width;
+	else if (*x >= (short)ns->width)
+		*x -= ns->width;
 	if (*y < 0)
-		*y += ns.height;
-	else if (*y >= (short)ns.height)
-		*y -= ns.height;
+		*y += ns->height;
+	else if (*y >= (short)ns->height)
+		*y -= ns->height;
 }
 
-#define bullet_maxphase (60 / ns.settings.bullet_speed)
+#define bullet_maxphase (60 / ns->settings.bullet_speed)
 #define effect_maxphase (60 / 2)
 	//Original NukeSnake's explosion time seems to be constant no matter what speed,
 	//but here, we'll just make the frame speed twice as fast as the players'
 
-unsigned long count_empty_spaces(void)
+unsigned long count_empty_spaces(NS *ns)
 {
-	const signed char *board = ns.board;
-	const signed char *overlay = ns.overlay;
-	unsigned long count = ns.width*ns.height;
+	const signed char *board = ns->board;
+	const signed char *overlay = ns->overlay;
+	unsigned long count = ns->width*ns->height;
 	unsigned long ret = 0;
 	for (;count--;board++,overlay++)
 		if (!*board && *overlay<0)
@@ -160,15 +158,15 @@ unsigned long count_empty_spaces(void)
 }
 
 //This function will return a non-empty space if no empty spaces are available, otherwise it will randomly pick a space
-signed char *find_empty_space(void)
+signed char *find_empty_space(NS *ns)
 {
-	signed char *board = ns.board;
-	signed char *overlay = ns.overlay;
-	unsigned long count = ns.width*ns.height;
+	signed char *board = ns->board;
+	signed char *overlay = ns->overlay;
+	unsigned long count = ns->width*ns->height;
 	unsigned long empty_count;
 	unsigned long selected;
 	
-	empty_count = count_empty_spaces();
+	empty_count = count_empty_spaces(ns);
 	if (!empty_count)
 	{
 		Glitch("No empty spaces available; writing over the topleft tile.");
@@ -182,10 +180,10 @@ signed char *find_empty_space(void)
 			return board;
 	
 	Bug("find_empty_space loop fell through.");
-	return ns.board;
+	return ns->board;
 }
 
-static signed char effect_frame_icon(NS_Effect *obj)
+static signed char effect_frame_icon(NS *ns, NS_Effect *obj)
 {
 	switch (obj->type)
 	{
@@ -196,24 +194,24 @@ static signed char effect_frame_icon(NS_Effect *obj)
 			if (obj->frame>=12)
 				return (obj->frame&2) ? Explode2 : Floor;
 			else
-				return (obj->frame&2) ? ns.players[obj->respawn].icon : Floor;
+				return (obj->frame&2) ? ns->players[obj->respawn].icon : Floor;
 			break;
 	}
 	return Floor;
 }
 
-static NS_Bullet *new_bullet(short type,unsigned short x,unsigned short y,short direction);
-static NS_Effect *new_effect(short type,unsigned short x,unsigned short y);
-static void update_effect(NS_Effect *obj);
-static NS_Player *find_player(unsigned short x, unsigned short y, NS_Player *not);
-static NS_Bullet *find_bullet(unsigned short x, unsigned short y, NS_Bullet *not);
-static NS_Effect *find_effect(unsigned short x, unsigned short y, NS_Effect *not);
-static void kill_player(NS_Player *player,short mod);
+static NS_Bullet *new_bullet(NS *ns, short type,unsigned short x,unsigned short y,short direction);
+static NS_Effect *new_effect(NS *ns, short type,unsigned short x,unsigned short y);
+static void update_effect(NS *ns, NS_Effect *obj);
+static NS_Player *find_player(NS *ns, unsigned short x, unsigned short y, NS_Player *not);
+static NS_Bullet *find_bullet(NS *ns, unsigned short x, unsigned short y, NS_Bullet *not);
+static NS_Effect *find_effect(NS *ns, unsigned short x, unsigned short y, NS_Effect *not);
+static void kill_player(NS *ns, NS_Player *player,short mod);
 
 
 // 'wait' should be set to nonzero so there's a short zombie time after the player dies
 //   otherwise, it should be zero
-static void respawn_player(NS_Player *player, short wait)
+static void respawn_player(NS *ns, NS_Player *player, short wait)
 {
 	NS_Effect *e;
 	
@@ -227,106 +225,106 @@ static void respawn_player(NS_Player *player, short wait)
 	
 	if (!wait)
 	{
-		unsigned long position = find_empty_space()-ns.board;
-		player->x = position % ns.width;
-		player->y = position / ns.width;
+		unsigned long position = find_empty_space(ns)-ns->board;
+		player->x = position % ns->width;
+		player->y = position / ns->width;
 	}
 	
-	e = new_effect(ET_Respawn,player->x,player->y);
+	e = new_effect(ns, ET_Respawn,player->x,player->y);
 	if (!e)
 		return;
-	e->respawn = player - ns.players;
+	e->respawn = player - ns->players;
 	if (!wait)
 	{
 		// Skip the dying part of the effect and only show the player spawning.
 		e->frame-=16;
-		cell_overlay(e->x, e->y) = effect_frame_icon(e);
+		cell_overlay(e->x, e->y) = effect_frame_icon(ns, e);
 	}
 }
 
 //makes the player appear on the board (called at the end of the respawn effect)
-static void position_player(NS_Player *player, unsigned short x, unsigned short y)
+static void position_player(NS *ns, NS_Player *player, unsigned short x, unsigned short y)
 {
 	player->x = x;
 	player->y = y;
 	
 	player->covering = Floor;
 	player->alive = 1;
-	player->has_tail = ns.settings.tails;
+	player->has_tail = ns->settings.tails;
 	player->fire_phase = -bullet_maxphase;
 	player->trudge = 0;
 	
 	cell(player->x,player->y) = player->icon;
 }
 
-static void setup_board(unsigned short width, unsigned short height)
+static void setup_board(NS *ns, unsigned short width, unsigned short height)
 {
 	if (!width)
 		width=1;
 	if (!height)
 		height=1;
-	if (ns.board)
+	if (ns->board)
 	{
-		free(ns.board);
-		free(ns.overlay);
+		free(ns->board);
+		free(ns->overlay);
 	}
-	ns.board=malloc(width*height*2);
-	if (!ns.board)
+	ns->board=malloc(width*height*2);
+	if (!ns->board)
 	{
 		Fatal("Board size %ux%u could not be allocated.",width,height);
 		exit(-1);
 	}
-	ns.overlay=malloc(width*height);
-	if (!ns.overlay)
+	ns->overlay=malloc(width*height);
+	if (!ns->overlay)
 	{
-		free(ns.board);
+		free(ns->board);
 		Fatal("Board size %ux%u could not be allocated.",width,height);
 		exit(-1);
 	}
-	memset(ns.board, Floor, width*height);
-	memset(ns.board+width*height, Floor, width*height);
-	memset(ns.overlay, -1, width*height);
-	ns.width=width;
-	ns.height=height;
+	memset(ns->board, Floor, width*height);
+	memset(ns->board+width*height, Floor, width*height);
+	memset(ns->overlay, -1, width*height);
+	ns->width=width;
+	ns->height=height;
 	
-	layout();
+	layout(ns);
 	
 	{
-		NS_Player *ptr = ns.players;
+		NS_Player *ptr = ns->players;
 		unsigned short count = PLAYER_MAX;
 		for (;count--;ptr++)
 			if (ptr->type)
 			{
-				respawn_player(ptr,0);
+				respawn_player(ns, ptr,0);
 			}
 	}
 	
 	ClearScreen();
-	NS_redraw();
+	NS_redraw(ns);
 }
 
 //Explode like a mine or like a tree after being hit by a rocket, but don't fire shrapnel at -trigger_direction
-static void explode(unsigned short x, unsigned short y, short trigger_direction)
+static void explode(NS *ns, unsigned short x, unsigned short y, short trigger_direction)
 {
 	short dir;
 	trigger_direction = dir_opposite[trigger_direction];
-	new_effect(ET_Explosion, x, y);
+	new_effect(ns, ET_Explosion, x, y);
 	for (dir=1;dir<=8;dir++)
 	{
 		if (dir == trigger_direction)
 			continue; //don't shoot a bullet back the same direction the trigger bullet came from
-		/*if (!ns.settings.diagonals && ~dir&1)
+		/*if (!ns->settings.diagonals && ~dir&1)
 			continue; //don't fire diagonal bullets in an explosion if diagonals are disabled
 			Actually, the original NukeSnake would fire diagonal bullets in explosions even if diagonals were off
 		*/
-		new_bullet(BT_Bullet, x, y, dir);
-		//new_bullet(rand_ulong(2)?BT_Bullet:BT_Rocket, x, y, dir); //Mega insanity
+		new_bullet(ns, BT_Bullet, x, y, dir);
+		//new_bullet(ns, rand_ulong(2)?BT_Bullet:BT_Rocket, x, y, dir); //Mega insanity
 	}
 }
 
 //decimate whatever is in this cell, replacing it with an explosion
 // (unless it's a player respawning)
-static void destroy_cell(unsigned short x, unsigned short y)
+static void destroy_cell(NS *ns, unsigned short x, unsigned short y)
 {
 	signed char *tile;
 	short tile_type;
@@ -339,13 +337,13 @@ static void destroy_cell(unsigned short x, unsigned short y)
 	switch (tile_class[(int)*tile])
 	{
 		case TC_Player:
-			p = find_player(x, y, NULL);
+			p = find_player(ns, x, y, NULL);
 			if (!p)
 				break;
-			kill_player(p, MOD_NukeRadius);
+			kill_player(ns, p, MOD_NukeRadius);
 			break;
 		case TC_Bullet:
-			b = find_bullet(x, y, NULL);
+			b = find_bullet(ns, x, y, NULL);
 			if (!b)
 				break;
 			b->type = 0;
@@ -356,7 +354,7 @@ static void destroy_cell(unsigned short x, unsigned short y)
 	tile = &cell_overlay(x,y);
 	if (*tile>=0)
 	{
-		e = find_effect(x, y, NULL);
+		e = find_effect(ns, x, y, NULL);
 		if (e)
 		{
 			if (e->type == ET_Respawn)
@@ -368,7 +366,7 @@ static void destroy_cell(unsigned short x, unsigned short y)
 	switch (tile_type)
 	{
 		case Mine:
-			explode(x,y,0);
+			explode(ns, x,y,0);
 			break;
 
 		// Note: If mine detonator is hit by nuke directly, it will trigger
@@ -376,7 +374,7 @@ static void destroy_cell(unsigned short x, unsigned short y)
 		// of a nuclear explosion, it will just be destroyed without triggering.
 
 		default:
-			new_effect(ET_Explosion, x, y);
+			new_effect(ns, ET_Explosion, x, y);
 	}
 }
 
@@ -384,7 +382,7 @@ static void destroy_cell(unsigned short x, unsigned short y)
 // Players are killed, bullets are destroyed, and explosions are replaced.
 // Mines within the blast radius are detonated.
 // Mine detonators within the blast radius are destroyed but not activated.
-static void explode_nuclear(unsigned short x, unsigned short y)
+static void explode_nuclear(NS *ns, unsigned short x, unsigned short y)
 {
 	unsigned short ix,iy;
 	unsigned short i,j;
@@ -400,7 +398,7 @@ static void explode_nuclear(unsigned short x, unsigned short y)
 		{
 			//do not destroy the corners
 			if (!((i==4 || i==0) && (j==4 || j==0)))
-				destroy_cell(ix,iy);
+				destroy_cell(ns, ix,iy);
 			
 			move_coord(ix, iy, Right);
 		}
@@ -408,11 +406,11 @@ static void explode_nuclear(unsigned short x, unsigned short y)
 	}
 }
 
-static void detonate_all_mines(short nuclear)
+static void detonate_all_mines(NS *ns, short nuclear)
 {
 	unsigned short x, y;
-	unsigned short width = ns.width, height = ns.height;
-	signed char *tile = ns.board;
+	unsigned short width = ns->width, height = ns->height;
+	signed char *tile = ns->board;
 
 	for (y = 0; y < height; y++)
 	for (x = 0; x < width; x++, tile++)
@@ -422,7 +420,7 @@ static void detonate_all_mines(short nuclear)
 			if (nuclear)
 			{
 				// This will make the mine go off too.
-				explode_nuclear(x, y);
+				explode_nuclear(ns, x, y);
 			}
 			else
 			{
@@ -430,30 +428,30 @@ static void detonate_all_mines(short nuclear)
 				// whatever's under it if I remember correctly.
 				*tile = Floor;
 
-				explode(x, y, 0);
+				explode(ns, x, y, 0);
 			}
 		}
 	}
 }
 
 //mod stands for "means of death";  it is any of enum MeansOfDeath
-static void kill_player(NS_Player *player,short mod)
+static void kill_player(NS *ns, NS_Player *player,short mod)
 {
 	player->deaths++;
 	cell(player->x, player->y) = player->covering;
 	player->alive = 0;
-	UpdateScores();
-	respawn_player(player, 1);
-	event(EV_PlayerKilled, mod, player-ns.players, player->x, player->y);
+	UpdateScores(ns);
+	respawn_player(ns, player, 1);
+	event(ns, EV_PlayerKilled, mod, player-ns->players, player->x, player->y);
 
-    if (!ns.settings.total_war)
-        ns.player_dying = 1;
+    if (!ns->settings.total_war)
+        ns->player_dying = 1;
 
     // Uncomment for silliness (to make players explode when they die).
-    //explode(player->x, player->y, player->direction);
+    //explode(ns, player->x, player->y, player->direction);
 }
 
-static void kill_bullet(NS_Bullet *obj)
+static void kill_bullet(NS *ns, NS_Bullet *obj)
 {
 	char bullet_type = obj->type;
 	obj->type = 0;
@@ -461,13 +459,13 @@ static void kill_bullet(NS_Bullet *obj)
 	switch (bullet_type)
 	{
 		case BT_Nuke:
-			explode_nuclear(obj->x, obj->y);
+			explode_nuclear(ns, obj->x, obj->y);
 			break;
 		case BT_Rocket:
-			explode(obj->x, obj->y,obj->direction);
+			explode(ns, obj->x, obj->y,obj->direction);
 			break;
 		default:
-			new_effect(ET_Explosion, obj->x, obj->y);
+			new_effect(ns, ET_Explosion, obj->x, obj->y);
 			break;
 	}
 }
@@ -475,7 +473,7 @@ static void kill_bullet(NS_Bullet *obj)
 //takes an object that has already been moved in 'direction' and corrects it for bouncing if it ran into a wall (i.e. if cell(*x,*y)==Wall currently)
 //it needs to be moved forward again afterwards
 //this function returns the direction the object should have in appearance and for next iteration (will be the same as *direction except in squeezes)
-static short bounce(unsigned short *x, unsigned short *y, char *direction)
+static short bounce(NS *ns, unsigned short *x, unsigned short *y, char *direction)
 {
 	unsigned short oldx,oldy;
 	char xwall,ywall;
@@ -533,9 +531,9 @@ short get_player_fire(NS_Player *player)
 
 /***  Object Finding Functions ***/
 
-static NS_Player *find_player(unsigned short x, unsigned short y, NS_Player *not)
+static NS_Player *find_player(NS *ns, unsigned short x, unsigned short y, NS_Player *not)
 {
-	NS_Player *obj=ns.players;
+	NS_Player *obj=ns->players;
 	unsigned short count=PLAYER_MAX;
 	
 	for (;count--;obj++)
@@ -547,9 +545,9 @@ static NS_Player *find_player(unsigned short x, unsigned short y, NS_Player *not
 	return NULL;
 }
 
-static NS_Bullet *find_bullet(unsigned short x, unsigned short y, NS_Bullet *not)
+static NS_Bullet *find_bullet(NS *ns, unsigned short x, unsigned short y, NS_Bullet *not)
 {
-	NS_Bullet *obj=ns.bullets;
+	NS_Bullet *obj=ns->bullets;
 	unsigned short count=BULLET_MAX;
 	
 	for (;count--;obj++)
@@ -561,9 +559,9 @@ static NS_Bullet *find_bullet(unsigned short x, unsigned short y, NS_Bullet *not
 	return NULL;
 }
 
-static NS_Effect *find_effect(unsigned short x, unsigned short y, NS_Effect *not)
+static NS_Effect *find_effect(NS *ns, unsigned short x, unsigned short y, NS_Effect *not)
 {
-	NS_Effect *obj=ns.effects;
+	NS_Effect *obj=ns->effects;
 	unsigned short count=EFFECT_MAX;
 	
 	for (;count--;obj++)
@@ -578,9 +576,9 @@ static NS_Effect *find_effect(unsigned short x, unsigned short y, NS_Effect *not
 	return NULL;
 }
 
-NS_Player *NS_find_player_by_type(short type, const NS_Player *not)
+NS_Player *NS_find_player_by_type(NS *ns, short type, const NS_Player *not)
 {
-	NS_Player *obj=ns.players;
+	NS_Player *obj=ns->players;
 	unsigned short count=PLAYER_MAX;
 	
 	for (;count--;obj++)
@@ -592,9 +590,9 @@ NS_Player *NS_find_player_by_type(short type, const NS_Player *not)
 
 /***  Object Creation Functions ***/
 
-static NS_Player *new_player(short type, short icon)
+static NS_Player *new_player(NS *ns, short type, short icon)
 {
-	NS_Player *obj=ns.players;
+	NS_Player *obj=ns->players;
 	unsigned short count=PLAYER_MAX;
 	
 	for (;count--;obj++)
@@ -612,8 +610,8 @@ static NS_Player *new_player(short type, short icon)
 	obj->nuke_count = 0;
 	memset(&obj->cs,0,sizeof(obj->cs));
 	
-	if (ns.board) //if the player is created before the board is set up, we want that to work, too
-		respawn_player(obj,0);
+	if (ns->board) //if the player is created before the board is set up, we want that to work, too
+		respawn_player(ns, obj,0);
 	
 	if (obj->type == PT_AI)
 		ai_init(obj);
@@ -621,11 +619,11 @@ static NS_Player *new_player(short type, short icon)
 	return obj;
 }
 
-static void update_bullet(NS_Bullet *obj);
+static void update_bullet(NS *ns, NS_Bullet *obj);
 
-static NS_Bullet *new_bullet(short type,unsigned short x,unsigned short y,short direction)
+static NS_Bullet *new_bullet(NS *ns, short type,unsigned short x,unsigned short y,short direction)
 {
-	NS_Bullet *obj=ns.bullets;
+	NS_Bullet *obj=ns->bullets;
 	unsigned short count=BULLET_MAX;
 	
 	for (;count--;obj++)
@@ -641,26 +639,26 @@ static NS_Bullet *new_bullet(short type,unsigned short x,unsigned short y,short 
 	obj->covering = cell(x,y);
 	obj->phase=bullet_maxphase-1;
 	
-	update_bullet(obj);
+	update_bullet(ns, obj);
 	
 	return obj;
 }
 
-static NS_Effect *new_effect(short type,unsigned short x,unsigned short y)
+static NS_Effect *new_effect(NS *ns, short type,unsigned short x,unsigned short y)
 {
 	NS_Effect *obj;
 	unsigned short count;
 	static const char effect_init_frame[2] = 
 		{1, 27};
 	
-	for (obj=ns.effects,count=EFFECT_MAX; count--; obj++)
+	for (obj=ns->effects,count=EFFECT_MAX; count--; obj++)
 		if (!obj->type)
 			break;
 	if ((short)count+1==0)
 	{ //we didn't find a hole for this effect
 		if (type == ET_Respawn)
 		{ //respawn effects absolutely have to get in, so we'll try to overwrite a non-respawn effect
-			for (obj=ns.effects,count=EFFECT_MAX; count--; obj++)
+			for (obj=ns->effects,count=EFFECT_MAX; count--; obj++)
 				if (obj->type!=ET_Respawn)
 					break;
 			if ((short)count+1==0)
@@ -688,10 +686,10 @@ static NS_Effect *new_effect(short type,unsigned short x,unsigned short y)
 	obj->y = y;
 	obj->phase = effect_maxphase;
 	obj->respawn = -1;
-	cell_overlay(x,y) = effect_frame_icon(obj);
+	cell_overlay(x,y) = effect_frame_icon(ns, obj);
 	
 	if (type == ET_Explosion)
-		event(EV_Explosion, 0, -1, obj->x, obj->y);
+		event(ns, EV_Explosion, 0, -1, obj->x, obj->y);
 	
 	return obj;
 }
@@ -706,7 +704,7 @@ static void update_player_direction(NS_Player *obj)
 
 /***  Object Update Functions ***/
 
-static void update_player(NS_Player *obj)
+static void update_player(NS *ns, NS_Player *obj)
 {
 	signed char tile; //tile the player's running into right now
 	short postdir;
@@ -727,7 +725,7 @@ static void update_player(NS_Player *obj)
 	if (!obj->direction)
 		return; //to prevent collision with self
 	
-	cell(obj->x,obj->y) = ns.settings.tails ? tail_icon(obj) : obj->covering;
+	cell(obj->x,obj->y) = ns->settings.tails ? tail_icon(obj) : obj->covering;
 	postdir = obj->direction;
 bounceback:
 	move_coord(obj->x, obj->y, obj->direction);
@@ -737,14 +735,14 @@ bounceback:
 	
 	tile = obj->covering;
 	
-	if (tile!=Water && ns.settings.explosion_blocks)
+	if (tile!=Water && ns->settings.explosion_blocks)
 	{
 		signed char c = cell_overlay(obj->x,obj->y);
 		if (c>=0)
 		{
-			NS_Effect *e = find_effect(obj->x,obj->y,NULL);
+			NS_Effect *e = find_effect(ns, obj->x,obj->y,NULL);
 			if (e && e->type == ET_Explosion)
-				kill_player(obj, MOD_Explosion);
+				kill_player(ns, obj, MOD_Explosion);
 			return;
 		}
 	}
@@ -754,24 +752,24 @@ bounceback:
 		case TC_Floor:
 			return;
 		case TC_Player:
-			p=find_player(obj->x,obj->y,obj);
+			p=find_player(ns, obj->x,obj->y,obj);
 			if (!p) //If this happens, it's due to a glitch in the game logic
 			{
 				obj->covering = Floor;
 				return;
 			}
 			obj->covering = p->covering;
-			kill_player(obj, MOD_Player);
-			kill_player(p, MOD_Player);
+			kill_player(ns, obj, MOD_Player);
+			kill_player(ns, p, MOD_Player);
 			return;
 		case TC_Bullet:
-			b=find_bullet(obj->x, obj->y,NULL);
+			b=find_bullet(ns, obj->x, obj->y,NULL);
 			if (!b) //If this happens, it's due to a glitch in the game logic
 			{
 				obj->covering = Floor;
 				return;
 			}
-			if (b->covering == Water && ns.settings.stop_at_water)
+			if (b->covering == Water && ns->settings.stop_at_water)
 			{ //The player should'nt be killed; it wasn't going to walk into the water
 				cell(obj->x,obj->y) = obj->covering;
 				move_coord(obj->x, obj->y, dir_opposite[(int)obj->direction]);
@@ -783,13 +781,13 @@ bounceback:
 			old_type = b->type;
 			b->type = 0;
 			if (old_type == BT_Nuke)
-				explode_nuclear(obj->x, obj->y);
+				explode_nuclear(ns, obj->x, obj->y);
 			else
-				kill_player(obj, MOD_Bullet+old_type-1);
+				kill_player(ns, obj, MOD_Bullet+old_type-1);
 			return;
 		case TC_Tail:
 			obj->covering = Floor;
-			kill_player(obj, MOD_Tail);
+			kill_player(ns, obj, MOD_Tail);
 			return;
 	}
 	//tile_class == TC_Other
@@ -798,36 +796,36 @@ bounceback:
 		case AmmoPack:
 			obj->covering = Floor;
 			obj->bullet_count += 5;
-			UpdateScores();
-			event(EV_AmmoPickedUp, 0, obj-ns.players, obj->x, obj->y);
+			UpdateScores(ns);
+			event(ns, EV_AmmoPickedUp, 0, obj-ns->players, obj->x, obj->y);
 			return;
 		case RocketPack:
 			obj->covering = Floor;
 			obj->rocket_count += 1;
-			UpdateScores();
-			event(EV_RocketPickedUp, 0, obj-ns.players, obj->x, obj->y);
+			UpdateScores(ns);
+			event(ns, EV_RocketPickedUp, 0, obj-ns->players, obj->x, obj->y);
 			return;
 		case NukePack:
 			obj->covering = Floor;
 			obj->nuke_count += 1;
-			UpdateScores();
-			event(EV_NukePickedUp, 0, obj-ns.players, obj->x, obj->y);
+			UpdateScores(ns);
+			event(ns, EV_NukePickedUp, 0, obj-ns->players, obj->x, obj->y);
 			return;
 		case Mine:
 			obj->covering = Floor;
-			kill_player(obj, MOD_Mine);
+			kill_player(ns, obj, MOD_Mine);
 			return;
 		case Coal:
 			obj->covering = Floor;
-			kill_player(obj, MOD_Coal);
+			kill_player(ns, obj, MOD_Coal);
 			return;
 		case MineDetonator:
 			obj->covering = Floor;
 
 			// Kill player before detonating mines to prevent player respawn from being duplicated.
-			kill_player(obj, MOD_MineDetonator);
+			kill_player(ns, obj, MOD_MineDetonator);
 
-			detonate_all_mines(0);
+			detonate_all_mines(ns, 0);
 
 			return;
 		case Tree:
@@ -835,10 +833,10 @@ bounceback:
 			obj->trudge = 1;
 			return;
 		case Wall:
-			if (ns.settings.rubber_walls)
+			if (ns->settings.rubber_walls)
 			{
 				cell(obj->x,obj->y) = obj->covering;
-				postdir = bounce(&obj->x, &obj->y, &obj->direction);
+				postdir = bounce(ns, &obj->x, &obj->y, &obj->direction);
 				if (!obj->direction)
 				{
 					obj->covering = cell(obj->x,obj->y);
@@ -851,11 +849,11 @@ bounceback:
 			else
 			{
 				obj->covering = Floor;
-				kill_player(obj, MOD_Wall);
+				kill_player(ns, obj, MOD_Wall);
 			}
 			return;
 		case Water:
-			if (ns.settings.stop_at_water)
+			if (ns->settings.stop_at_water)
 			{
 				//undo the cell's movement by moving the other way
 				cell(obj->x,obj->y) = obj->covering;
@@ -869,7 +867,7 @@ bounceback:
 	}
 }
 
-static void update_bullet(NS_Bullet *obj)
+static void update_bullet(NS *ns, NS_Bullet *obj)
 {
 	signed char tile; //tile the player's running into right now
 	char bullet_type = obj->type; //to compensate for when obj->type is set to 0
@@ -888,12 +886,12 @@ bounceback:
 	tile = obj->covering;
 	
 	// If spam protection is on, explosion effects swallow bullets.
-	if (ns.settings.explosion_blocks)
+	if (ns->settings.explosion_blocks)
 	{
 		signed char c = cell_overlay(obj->x,obj->y);
 		if (c>=0)
 		{
-			NS_Effect *e = find_effect(obj->x,obj->y,NULL);
+			NS_Effect *e = find_effect(ns, obj->x,obj->y,NULL);
 			if (e && e->type == ET_Explosion)
 			{
 				obj->type = 0;
@@ -903,7 +901,7 @@ bounceback:
 				// shouldn't trigger a nuke either.  Though if nukes triggered other nukes,
 				// one interesting side effect is that shooting a stream of nukes would result
 				// in a big fireball when one of the nukes blows up.
-				new_effect(ET_Explosion, obj->x, obj->y);
+				new_effect(ns, ET_Explosion, obj->x, obj->y);
 			}
 			return;
 		}
@@ -914,7 +912,7 @@ bounceback:
 		case TC_Floor:
 			return;
 		case TC_Player:
-			p=find_player(obj->x,obj->y,NULL);
+			p=find_player(ns, obj->x,obj->y,NULL);
 			if (!p) //If this happens, it's due to a glitch in the game logic
 			{
 				obj->covering = Floor;
@@ -923,14 +921,14 @@ bounceback:
 			cell(obj->x, obj->y) = tile;
 			obj->type = 0;
 			if (bullet_type == BT_Nuke)
-				explode_nuclear(obj->x, obj->y);
+				explode_nuclear(ns, obj->x, obj->y);
 			else
-				kill_player(p, MOD_Bullet+bullet_type-1);
+				kill_player(ns, p, MOD_Bullet+bullet_type-1);
 			return;
 		case TC_Bullet:
 		{
 			// Find and remove the other bullet.
-			b=find_bullet(obj->x, obj->y, obj);
+			b=find_bullet(ns, obj->x, obj->y, obj);
 			if (!b) //If this happens, it's due to a glitch in the game logic
 			{
 				obj->covering = Floor;
@@ -949,14 +947,14 @@ bounceback:
 			// it's a nuclear explosion.  If a rocket collides with a bullet or rocket,
 			// it's a regular explosion so it doesn't blow up in either shooter's face.
 			if (biggest_bullet_type == BT_Nuke)
-				explode_nuclear(obj->x, obj->y);
+				explode_nuclear(ns, obj->x, obj->y);
 			else
-				new_effect(ET_Explosion, obj->x, obj->y);
+				new_effect(ns, ET_Explosion, obj->x, obj->y);
 
 			return;
 		}
 		case TC_Tail:
-			kill_bullet(obj);
+			kill_bullet(ns, obj);
 			return;
 	}
 	//tile_class == TC_Other
@@ -969,29 +967,29 @@ bounceback:
 		case RocketPack:
 		case Coal:
 		case Tree:
-			kill_bullet(obj);
+			kill_bullet(ns, obj);
 			return;
 		case NukePack:
 			// Shooting nuke ammo causes a nuclear explosion.
-			explode_nuclear(obj->x, obj->y);
+			explode_nuclear(ns, obj->x, obj->y);
 			return;
 		case Mine:
 			obj->type = 0;
 			cell(obj->x, obj->y) = Floor;
 			if (bullet_type == BT_Nuke)
-				explode_nuclear(obj->x, obj->y);
+				explode_nuclear(ns, obj->x, obj->y);
 			else
-				explode(obj->x, obj->y,obj->direction);
+				explode(ns, obj->x, obj->y,obj->direction);
 			return;
 		case MineDetonator:
-			kill_bullet(obj);
-			detonate_all_mines(bullet_type == BT_Nuke);
+			kill_bullet(ns, obj);
+			detonate_all_mines(ns, bullet_type == BT_Nuke);
 			return;
 		case Wall:
-			if (ns.settings.rubber_walls)
+			if (ns->settings.rubber_walls)
 			{
 				cell(obj->x,obj->y) = obj->covering;
-				postdir = bounce(&obj->x, &obj->y, &obj->direction);
+				postdir = bounce(ns, &obj->x, &obj->y, &obj->direction);
 				if (!obj->direction)
 				{
 					obj->covering = cell(obj->x,obj->y);
@@ -1002,12 +1000,12 @@ bounceback:
 				else goto bounceback;
 			}
 			else
-				kill_bullet(obj);
+				kill_bullet(ns, obj);
 			return;
 	}
 }
 
-static void update_effect(NS_Effect *obj)
+static void update_effect(NS *ns, NS_Effect *obj)
 {
 	if (obj->frame-- <= 0)
 	{
@@ -1015,7 +1013,7 @@ static void update_effect(NS_Effect *obj)
 		if (obj->type == ET_Respawn)
 		{
 			obj->type = 0;
-			position_player(ns.players+obj->respawn, obj->x, obj->y);
+			position_player(ns, ns->players+obj->respawn, obj->x, obj->y);
 		}
 		obj->type = 0;
 	}
@@ -1023,29 +1021,29 @@ static void update_effect(NS_Effect *obj)
 	{
 		if (obj->type == ET_Respawn && obj->frame == 11)
 		{
-			if (ns.settings.total_war)
+			if (ns->settings.total_war)
 			{
 				// Move the respawn effect to the player's new position.
 				cell_overlay(obj->x, obj->y) = -1; //the effect is moving, so we need to make this spot transparent
-				unsigned long position = find_empty_space()-ns.board;
-				obj->x = position % ns.width;
-				obj->y = position / ns.width;
+				unsigned long position = find_empty_space(ns)-ns->board;
+				obj->x = position % ns->width;
+				obj->y = position / ns->width;
 			}
 			else
 			{
 				// Schedule a reset (don't reset now while we're looping through stuff).
-				ns.reset_scheduled = 1;
+				ns->reset_scheduled = 1;
 			}
 		}
-		cell_overlay(obj->x, obj->y) = effect_frame_icon(obj);
+		cell_overlay(obj->x, obj->y) = effect_frame_icon(ns, obj);
 	}
 }
 
 /***  Bulk Object Update Functions ***/
 
-static short update_players(void)
+static short update_players(NS *ns)
 {
-	NS_Player *ptr = ns.players;
+	NS_Player *ptr = ns->players;
 	unsigned short count = PLAYER_MAX;
 	char something_updated = 0;
 	
@@ -1053,7 +1051,7 @@ static short update_players(void)
 	{
 		if (ptr->type)
 		{
-			update_player(ptr); //if the player is dead, this function will handle that
+			update_player(ns, ptr); //if the player is dead, this function will handle that
 			something_updated=1;
 		}
 	}
@@ -1061,9 +1059,9 @@ static short update_players(void)
 	return something_updated;
 }
 
-static short update_bullets(void)
+static short update_bullets(NS *ns)
 {
-	NS_Bullet *ptr = ns.bullets;
+	NS_Bullet *ptr = ns->bullets;
 	unsigned short count = BULLET_MAX;
 	char something_updated = 0;
 	
@@ -1073,7 +1071,7 @@ static short update_bullets(void)
 			continue;
 		if (ptr->phase--==0)
 		{
-			update_bullet(ptr);
+			update_bullet(ns, ptr);
 			ptr->phase=bullet_maxphase-1;
 			something_updated=1;
 		}
@@ -1082,9 +1080,9 @@ static short update_bullets(void)
 	return something_updated;
 }
 
-static short update_effects(void)
+static short update_effects(NS *ns)
 {
-	NS_Effect *ptr = ns.effects;
+	NS_Effect *ptr = ns->effects;
 	unsigned short count = EFFECT_MAX;
 	char something_updated = 0;
 	
@@ -1094,7 +1092,7 @@ static short update_effects(void)
 			continue;
 		if (ptr->phase--==0)
 		{
-			update_effect(ptr);
+			update_effect(ns, ptr);
 			ptr->phase=effect_maxphase;
 			something_updated=1;
 		}
@@ -1103,9 +1101,9 @@ static short update_effects(void)
 	return something_updated;
 }
 
-static short check_fires(void)
+static short check_fires(NS *ns)
 {
-	NS_Player *ptr = ns.players;
+	NS_Player *ptr = ns->players;
 	NS_Bullet *b;
 	unsigned short count = PLAYER_MAX;
 	char something_updated = 0;
@@ -1120,38 +1118,38 @@ static short check_fires(void)
 			if (ptr->fire_phase < -bullet_maxphase)
 				ptr->fire_phase = -bullet_maxphase;
 			if (get_player_fire(ptr))
-			//if ((ns.phase == 0 || ns.phase == 39 )&& ptr->type == PT_Right)
+			//if ((ns->phase == 0 || ns->phase == 39 )&& ptr->type == PT_Right)
 			{
 				unsigned short x=ptr->x, y=ptr->y;
 				
 				bullet_type = 0;
 				
 				//TODO:  implement bullet/rocket governors
-				if (ns.settings.nukes && (!ns.settings.nuke_ammo || ptr->nuke_count))
+				if (ns->settings.nukes && (!ns->settings.nuke_ammo || ptr->nuke_count))
 				{
 					bullet_type = BT_Nuke;
-					if (ns.settings.nuke_ammo)
+					if (ns->settings.nuke_ammo)
 					{
 						ptr->nuke_count--;
-						UpdateScores();
+						UpdateScores(ns);
 					}
 				}
-				else if (ns.settings.rockets && (!ns.settings.rocket_ammo || ptr->rocket_count))
+				else if (ns->settings.rockets && (!ns->settings.rocket_ammo || ptr->rocket_count))
 				{
 					bullet_type = BT_Rocket;
-					if (ns.settings.rocket_ammo)
+					if (ns->settings.rocket_ammo)
 					{
 						ptr->rocket_count--;
-						UpdateScores();
+						UpdateScores(ns);
 					}
 				}
-				else if (ns.settings.bullets && (!ns.settings.bullet_ammo || ptr->bullet_count))
+				else if (ns->settings.bullets && (!ns->settings.bullet_ammo || ptr->bullet_count))
 				{
 					bullet_type = BT_Bullet;
-					if (ns.settings.bullet_ammo)
+					if (ns->settings.bullet_ammo)
 					{
 						ptr->bullet_count--;
-						UpdateScores();
+						UpdateScores(ns);
 					}
 				}
 				else
@@ -1171,18 +1169,18 @@ static short check_fires(void)
 				update_player_direction(ptr); //so the player can fire the direction he wanted to most recently
 				
 				move_coord(x,y,ptr->direction);
-				if (ns.settings.rubber_walls && cell(x,y)==Wall)
+				if (ns->settings.rubber_walls && cell(x,y)==Wall)
 				{ //the player lodged between two walls tried to fire; this would cause a glitch without this segment of code that simply kills the player
-					event(bullet_type+EV_BulletFired-BT_Bullet, 0, ptr - ns.players, ptr->x, ptr->y);
-					kill_player(ptr, MOD_ShotHimself);
+					event(ns, bullet_type+EV_BulletFired-BT_Bullet, 0, ptr - ns->players, ptr->x, ptr->y);
+					kill_player(ns, ptr, MOD_ShotHimself);
 					continue;
 				}
 				
-				b = new_bullet(bullet_type, ptr->x, ptr->y, ptr->direction);
+				b = new_bullet(ns, bullet_type, ptr->x, ptr->y, ptr->direction);
 				if (b && b->type)
-					update_bullet(b);
+					update_bullet(ns, b);
 				
-				event(bullet_type+EV_BulletFired-BT_Bullet, 0, ptr - ns.players, ptr->x, ptr->y);
+				event(ns, bullet_type+EV_BulletFired-BT_Bullet, 0, ptr - ns->players, ptr->x, ptr->y);
 			}
 		}
 	}
@@ -1191,9 +1189,9 @@ static short check_fires(void)
 }
 
 //when the players move, that may keep them from being able to fire (because they'll end up shooting their own bullet)
-static void players_moved_dont_fire(void)
+static void players_moved_dont_fire(NS *ns)
 {
-	NS_Player *ptr = ns.players;
+	NS_Player *ptr = ns->players;
 	unsigned short count = PLAYER_MAX;
 	for (;count--;ptr++)
 	{
@@ -1206,11 +1204,11 @@ static void players_moved_dont_fire(void)
 
 /***  Object Other Functions ***/
 
-static void clear_objects(void)
+static void clear_objects(NS *ns)
 {
-	memset(ns.players,0,sizeof(ns.players));
-	memset(ns.bullets,0,sizeof(ns.bullets));
-	memset(ns.effects,0,sizeof(ns.effects));
+	memset(ns->players,0,sizeof(ns->players));
+	memset(ns->bullets,0,sizeof(ns->bullets));
+	memset(ns->effects,0,sizeof(ns->effects));
 }
 
 /*** Public Functions ***/
@@ -1248,52 +1246,52 @@ static const NS_Settings defaultSettings=
 
 static short redraw_scheduled;
 
-void NS_init(void)
+void NS_init(NS *ns)
 {
-	ns.board=NULL;
-	ns.overlay=NULL;
-	ns.settings = defaultSettings;
+	ns->board=NULL;
+	ns->overlay=NULL;
+	ns->settings = defaultSettings;
 	redraw_scheduled = 1;
 }
 
-void NS_uninit(void)
+void NS_uninit(NS *ns)
 {
-	if (ns.board)
-		free(ns.board);
-	if (ns.overlay)
-		free(ns.overlay);
-	ns.board=NULL;
-	ns.overlay=NULL;
+	if (ns->board)
+		free(ns->board);
+	if (ns->overlay)
+		free(ns->overlay);
+	ns->board=NULL;
+	ns->overlay=NULL;
 }
 
 //gametype is one of the appropriate menu items (i.e. one of
 //	C_NewGame, C_NewGame_1Player, C_Demo)
-void NS_newgame(unsigned short width,unsigned short height, short gametype)
+void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gametype)
 {
 	ClearAllKeys();
-	ns.phase=59;
-	ns.paused=0;
-	ns.player_dying=0;
-	clear_objects();
-	setup_board(width,height);
+	ns->phase=59;
+	ns->paused=0;
+	ns->player_dying=0;
+	clear_objects(ns);
+	setup_board(ns,width,height);
 	switch (gametype)
 	{
 		case C_NewGame: //2 player
-			new_player(PT_Right, BluePiece);
-			new_player(PT_Left, RedPiece);
+			new_player(ns, PT_Right, BluePiece);
+			new_player(ns, PT_Left, RedPiece);
 			break;
 		case C_NewGame_1Player: //1 player, 1 AI
-			new_player(PT_Right, BluePiece);
-			new_player(PT_AI, RedPiece);
+			new_player(ns, PT_Right, BluePiece);
+			new_player(ns, PT_AI, RedPiece);
 			break;
 		case C_Demo: //2 AIs
-			new_player(PT_AI, BluePiece);
-			new_player(PT_AI, RedPiece);
+			new_player(ns, PT_AI, BluePiece);
+			new_player(ns, PT_AI, RedPiece);
 			break;
 	}
 	{
 		//TODO:  Use an event call for this (maybe)
-		NS_Player *p = ns.players;
+		NS_Player *p = ns->players;
 		unsigned short count = PLAYER_MAX;
 		for (;count--;p++)
 		{
@@ -1301,31 +1299,31 @@ void NS_newgame(unsigned short width,unsigned short height, short gametype)
 				ai_newround(p);
 		}
 	}
-	UpdateScores();
-	NS_redraw();
+	UpdateScores(ns);
+	NS_redraw(ns);
 }
 
-void NS_newround(unsigned short width,unsigned short height)
+void NS_newround(NS *ns, unsigned short width,unsigned short height)
 {
 	ClearAllKeys();
-	ns.phase=59;
-	ns.paused=0;
-	ns.reset_scheduled=0;
-	ns.player_dying=0;
+	ns->phase=59;
+	ns->paused=0;
+	ns->reset_scheduled=0;
+	ns->player_dying=0;
 	
 	{
-		NS_Player *p = ns.players;
+		NS_Player *p = ns->players;
 		unsigned short count = PLAYER_MAX;
 		for (;count--;p++)
 			p->alive = 0;
 	}
-	memset(ns.bullets,0,sizeof(ns.bullets));
-	memset(ns.effects,0,sizeof(ns.effects));
+	memset(ns->bullets,0,sizeof(ns->bullets));
+	memset(ns->effects,0,sizeof(ns->effects));
 	
-	setup_board(width,height);
+	setup_board(ns,width,height);
 	{
 		//TODO:  Use an event call for this (maybe)
-		NS_Player *p = ns.players;
+		NS_Player *p = ns->players;
 		unsigned short count = PLAYER_MAX;
 		for (;count--;p++)
 		{
@@ -1336,33 +1334,33 @@ void NS_newround(unsigned short width,unsigned short height)
 }
 
 //returns one of enum FrameStatus
-short NS_frame(void)
+short NS_frame(NS *ns)
 {
 	char something_updated=0;
 	
-	if (ns.paused)
+	if (ns->paused)
 		return NSF_NORMAL;
 	
-	if (update_effects())
+	if (update_effects(ns))
 		something_updated=1;
 
 	// Only update effects (which includes player blinking) when a player has died.
-	if (!ns.player_dying)
+	if (!ns->player_dying)
 	{
-		if (update_bullets())
+		if (update_bullets(ns))
 			something_updated=1;
-		if (check_fires())
+		if (check_fires(ns))
 			something_updated=1;
-		if (!ns.phase--)
+		if (!ns->phase--)
 		{
-			ns.phase=59;
-			players_moved_dont_fire(); //when the players move, that may keep them from being able to fire (because they'll end up shooting their own bullet)
+			ns->phase=59;
+			players_moved_dont_fire(ns); //when the players move, that may keep them from being able to fire (because they'll end up shooting their own bullet)
 			something_updated=1;
-			update_players();
+			update_players(ns);
 			ClearPlayerDirKeys();
 		}
 		{
-			NS_Player *p = ns.players;
+			NS_Player *p = ns->players;
 			unsigned short count = PLAYER_MAX;
 			for (;count--;p++)
 			{
@@ -1372,38 +1370,38 @@ short NS_frame(void)
 		}
 	}
 
-	if (ns.reset_scheduled)
+	if (ns->reset_scheduled)
 	{
-		ns.reset_scheduled = 0;
-		NS_newround(ns.width, ns.height);
+		ns->reset_scheduled = 0;
+		NS_newround(ns, ns->width, ns->height);
 	}
 
 	if (something_updated)
-		NS_draw();
+		NS_draw(ns);
 	
 	return NSF_NORMAL;
 }
 
-void NS_schedule_redraw(void)
+void NS_schedule_redraw()
 {
 	redraw_scheduled = 1;
 }
 
 //draws the tiles that were changed from last redraw
 //returns nonzero if something was actually redrawn
-short NS_draw(void)
+short NS_draw(NS *ns)
 {
 	unsigned short x,y;
-	const signed char *board = ns.board;
-	const signed char *overlay = ns.overlay;
-	signed char *actual = ns.board + ns.width*ns.height;
+	const signed char *board = ns->board;
+	const signed char *overlay = ns->overlay;
+	signed char *actual = ns->board + ns->width*ns->height;
 	short ret=0;
 	
 	if (!redraw_scheduled)
 		return 0;
 	
-	for (y=0; y<ns.height; y++)
-	for (x=0; x<ns.width;  x++, board++, overlay++, actual++)
+	for (y=0; y<ns->height; y++)
+	for (x=0; x<ns->width;  x++, board++, overlay++, actual++)
 	{
 		signed char thistile = *overlay<0 ? *board : *overlay;
 			//thistile = the board tile unless the corresponding overlay tile is used

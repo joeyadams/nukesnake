@@ -32,9 +32,12 @@
 	//PCs have keyboards that can be used for alt shortcuts on keyboards
 
 #include <allegro.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
+
+struct NS;
 
 typedef struct NS_Net
 {
@@ -61,7 +64,7 @@ short GetPlayerFire(short type); //PT_Right=1, PT_Left=2 (, PT_Network=3)
 //handles a directional keypress for a player (so that the right player's 4 and 8 will accumulate to be 7, for instance)
 //used by main.c
 //if diagonal_compat is set, non-diagonal keys can be combined for a diagonal result
-void AcceptDirKey(short type, short direction, short diagonal_compat);
+void AcceptDirKey(short type, short direction, bool diagonals, bool diagonal_compat);
 
 //handles a fire keypress for a player
 void AcceptFireKey(short type,short val);
@@ -77,6 +80,6 @@ void ClearPlayerDirKeys(void);
 //Currently, it is just for spawning sounds
 void GlueEvent(short type, short param, short player, unsigned short x, unsigned short y);
 
-void UpdateScores(void);
+void UpdateScores(struct NS *ns);
 
 #endif //ifndef DRAW_H

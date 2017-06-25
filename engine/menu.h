@@ -43,8 +43,8 @@ enum Commands
 	C_COUNT
 };
 
-void NS_command(short command);
-short NS_get_command_state(short command);
+void NS_command(NS *ns, short command);
+short NS_get_command_state(NS *ns, short command);
 	#define M_Disabled 1
 	#define M_Checked 2
 
