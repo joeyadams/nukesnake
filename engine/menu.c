@@ -23,6 +23,7 @@
  * IN THE SOFTWARE.
  */
 
+#include "menu.h"
 #include "game.h"
 
 //Note that menu.c/menu.h do not handle the rendering of menus, only the platform-independent logical information

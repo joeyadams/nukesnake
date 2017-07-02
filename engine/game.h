@@ -45,7 +45,6 @@ typedef struct NS_Bullet NS_Bullet;
 typedef struct NS_Effect NS_Effect;
 
 #include "ai.h"
-#include "menu.h"
 
 void NS_init(NS *ns);
 void NS_uninit(NS *ns);
