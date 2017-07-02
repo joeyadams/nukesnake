@@ -24,14 +24,16 @@
  */
 
 #include "ai.h"
+#include "glue.h"
 
 //TODO:  Add more event calls for ammo collection (by any player), bullet fires, bullet explosions, and player deaths (as needed).
 
 static void init_position(NS_Player *player)
 {
-	player->cs.ai.last_x = player->x;
-	player->cs.ai.last_y = player->y;
-	player->cs.ai.last_direction = player->direction;
+    (void)player;
+	// player->cs.ai.last_x = player->x;
+	// player->cs.ai.last_y = player->y;
+	// player->cs.ai.last_direction = player->direction;
 }
 
 void ai_init(NS_Player *player)

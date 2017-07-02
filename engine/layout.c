@@ -24,6 +24,7 @@
  */
 
 #include "layout.h"
+#include "glue.h"
 
 //Laying out the board is given its own source file because of the complexity associated with linear and cluster (a.k.a. fractal) terrain
 

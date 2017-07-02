@@ -140,6 +140,17 @@ void _move_coord(NS *ns, unsigned short *xo, unsigned short *yo, short direction
 		*y -= ns->height;
 }
 
+static short average_dir(short a, short b)
+{
+	short ret=vec_dir((dir_vec(a)[0]+dir_vec(b)[0])/2, (dir_vec(a)[1]+dir_vec(b)[1])/2);
+	if (ret<0 || ret>=8)
+	{
+		Bug("vec_dir returned an invalid direction %d.",ret);
+		ret=0;
+	}
+	return ret;
+}
+
 #define bullet_maxphase (60 / ns->settings.bullet_speed)
 #define effect_maxphase (60 / 2)
 	//Original NukeSnake's explosion time seems to be constant no matter what speed,
@@ -608,7 +619,6 @@ static NS_Player *new_player(NS *ns, short type, short icon)
 	obj->bullet_count = 5;
 	obj->rocket_count = 0;
 	obj->nuke_count = 0;
-	memset(&obj->cs,0,sizeof(obj->cs));
 	
 	if (ns->board) //if the player is created before the board is set up, we want that to work, too
 		respawn_player(ns, obj,0);

@@ -45,7 +45,6 @@ typedef struct NS_Bullet NS_Bullet;
 typedef struct NS_Effect NS_Effect;
 
 #include "ai.h"
-#include "glue.h"
 #include "menu.h"
 
 void NS_init(NS *ns);
@@ -111,12 +110,6 @@ struct NS
 		unsigned short rocket_count; //only matters if settings.rocket_ammo==1
 		unsigned short nuke_count; //only matters if settings.nuke_ammo==1
 		unsigned short deaths;
-		union
-		{
-			//PT_Right and PT_Left (players controlled by the keyboard) have no controller state information
-			NS_AI ai; //defined in ai.h
-			NS_Net net; //defined in glue.h
-		} cs; //controller state
 	} players[PLAYER_MAX];
 	struct NS_Bullet
 	{
@@ -145,17 +138,6 @@ struct NS
 extern const signed char _dir_vec[][2];
 #define vec_dir(x,y) (_vec_dir[(y)+1][(x)+1]);
 extern const char _vec_dir[3][3];
-static inline short average_dir(short a, short b)
-{
-	short ret=vec_dir((dir_vec(a)[0]+dir_vec(b)[0])/2, (dir_vec(a)[1]+dir_vec(b)[1])/2);
-	if (ret<0 || ret>=8)
-	{
-		Bug("vec_dir returned an invalid direction %d.",ret);
-		ret=0;
-	}
-	return ret;
-}
-
 #define bullet_icon(type,direction) (BulletH + ((type)-1)*4 + dir_hvfb[(int)(direction)])
 extern const char dir_hvfb[9];
 
