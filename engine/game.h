@@ -44,8 +44,6 @@ typedef struct NS_Player NS_Player;
 typedef struct NS_Bullet NS_Bullet;
 typedef struct NS_Effect NS_Effect;
 
-#include "ai.h"
-
 void NS_init(NS *ns);
 void NS_uninit(NS *ns);
 void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gametype);

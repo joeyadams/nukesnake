@@ -25,6 +25,7 @@
 
 #include "game.h"
 #include "layout.h"
+#include "ai.h"
 #include "glue.h"
 #include "menu.h"
 
