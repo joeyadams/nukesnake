@@ -48,7 +48,12 @@ void NS_init(NS *ns);
 void NS_uninit(NS *ns);
 void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gametype);
 void NS_newround(NS *ns, unsigned short width,unsigned short height);
+
+// Advance the state of the game by one step.
+// A step is 1/(60 * game speed) seconds.
+// TODO: Make FrameStatus a signalling variable in NS, and don't redraw the 
 short NS_frame(NS *ns); //returns one of FrameStatus
+
 void NS_schedule_redraw();
 short NS_draw(NS *ns);
 
@@ -66,6 +71,13 @@ static inline void NS_redraw(NS *ns)
 #define BULLET_MAX 256
 #define EFFECT_MAX 256
 
+// Context used by the game logic.
+//  - Game state
+//  - Settings
+//  - Signaling data
+//  - Copy of the board to optimize redrawing
+
+// Game state (plus extra info to optimize drawing).
 struct NS
 {
 	signed char *board; //board==NULL means there is no game open right now
@@ -86,11 +98,16 @@ struct NS
 			diagonals:1, walls:1, rubber_walls:1;
 		unsigned short tails:1, explosion_blocks:1, total_war:1;
 			//total_war means there are no new rounds; players simply respawn
-		unsigned char game_speed; //undefined units
+		unsigned char game_speed; // Number of gamestate updates per 60th of a second (1-10, default 5)
 		unsigned char bullet_speed; //speed in relation to player (should be 2...6)
 	} settings;
 	unsigned short phase; //counts down
 	unsigned short paused:1, player_dying:1, reset_scheduled:1;
+
+    // Set to 1 by NS_frame when any player's score or ammo count changes.
+    // The 
+    unsigned short scores_changed:1;
+
 	struct NS_Player
 	{
 		char type; //Any of PlayerTypes or 0 for hole

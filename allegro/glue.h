@@ -80,6 +80,7 @@ void ClearPlayerDirKeys(void);
 //Currently, it is just for spawning sounds
 void GlueEvent(short type, short param, short player, unsigned short x, unsigned short y);
 
+// Called after any player's score or ammo count changes.
 void UpdateScores(struct NS *ns);
 
 #endif //ifndef DRAW_H
