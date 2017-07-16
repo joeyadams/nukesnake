@@ -219,7 +219,7 @@ static NS_Player *find_player(NS *ns, unsigned short x, unsigned short y, NS_Pla
 static NS_Bullet *find_bullet(NS *ns, unsigned short x, unsigned short y, NS_Bullet *not);
 static NS_Effect *find_effect(NS *ns, unsigned short x, unsigned short y, NS_Effect *not);
 static void kill_player(NS *ns, NS_Player *player,short mod);
-
+static void free_board(NS *ns);
 
 // 'wait' should be set to nonzero so there's a short zombie time after the player dies
 //   otherwise, it should be zero
@@ -271,33 +271,33 @@ static void position_player(NS *ns, NS_Player *player, unsigned short x, unsigne
 
 static void setup_board(NS *ns, unsigned short width, unsigned short height)
 {
-	if (!width)
-		width=1;
-	if (!height)
-		height=1;
-	if (ns->board)
+	if (width == 0)
+		width = 1;
+	if (height == 0)
+		height = 1;
+
+    free_board(ns);
+
+	ns->board = malloc(width * height);
+	ns->overlay = malloc(width * height);
+	ns->board_buffer = malloc(width * height);
+
+	if (ns->board == NULL || ns->overlay == NULL || ns->board_buffer == NULL)
 	{
-		free(ns->board);
-		free(ns->overlay);
-	}
-	ns->board=malloc(width*height*2);
-	if (!ns->board)
-	{
+        free_board(ns);
 		Fatal("Board size %ux%u could not be allocated.",width,height);
 		exit(-1);
 	}
-	ns->overlay=malloc(width*height);
-	if (!ns->overlay)
-	{
-		free(ns->board);
-		Fatal("Board size %ux%u could not be allocated.",width,height);
-		exit(-1);
-	}
+
 	memset(ns->board, Floor, width*height);
-	memset(ns->board+width*height, Floor, width*height);
 	memset(ns->overlay, -1, width*height);
-	ns->width=width;
-	ns->height=height;
+
+    // Set to -1 to force all tiles to be redrawn.
+    // No foreground cell should ever be negative.
+	memset(ns->board_buffer, -1, width*height);
+
+	ns->width = width;
+	ns->height = height;
 	
 	layout(ns);
 	
@@ -305,14 +305,25 @@ static void setup_board(NS *ns, unsigned short width, unsigned short height)
 		NS_Player *ptr = ns->players;
 		unsigned short count = PLAYER_MAX;
 		for (;count--;ptr++)
+        {
 			if (ptr->type)
-			{
 				respawn_player(ns, ptr,0);
-			}
+        }
 	}
-	
-	ClearScreen();
-	NS_redraw(ns);
+}
+
+static void free_board(NS *ns)
+{
+	if (ns->board != NULL)
+		free(ns->board);
+	if (ns->overlay != NULL)
+		free(ns->overlay);
+    if (ns->board_buffer != NULL)
+		free(ns->board_buffer);
+
+	ns->board = NULL;
+	ns->overlay = NULL;
+    ns->board_buffer = NULL;
 }
 
 //Explode like a mine or like a tree after being hit by a rocket, but don't fire shrapnel at -trigger_direction
@@ -1255,24 +1266,15 @@ static const NS_Settings defaultSettings=
 	#endif
 };
 
-static short redraw_scheduled;
-
 void NS_init(NS *ns)
 {
-	ns->board=NULL;
-	ns->overlay=NULL;
+    memset(ns, 0, sizeof(NS));
 	ns->settings = defaultSettings;
-	redraw_scheduled = 1;
 }
 
 void NS_uninit(NS *ns)
 {
-	if (ns->board)
-		free(ns->board);
-	if (ns->overlay)
-		free(ns->overlay);
-	ns->board=NULL;
-	ns->overlay=NULL;
+    free_board(ns);
 }
 
 //gametype is one of the appropriate menu items (i.e. one of
@@ -1311,7 +1313,6 @@ void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gamety
 		}
 	}
 	UpdateScores(ns);
-	NS_redraw(ns);
 }
 
 void NS_newround(NS *ns, unsigned short width,unsigned short height)
@@ -1344,29 +1345,22 @@ void NS_newround(NS *ns, unsigned short width,unsigned short height)
 	}
 }
 
-//returns one of enum FrameStatus
-short NS_frame(NS *ns)
+void NS_frame(NS *ns)
 {
-	char something_updated=0;
-	
 	if (ns->paused)
-		return NSF_NORMAL;
+		return;
 	
-	if (update_effects(ns))
-		something_updated=1;
+	update_effects(ns);
 
 	// Only update effects (which includes player blinking) when a player has died.
 	if (!ns->player_dying)
 	{
-		if (update_bullets(ns))
-			something_updated=1;
-		if (check_fires(ns))
-			something_updated=1;
+		update_bullets(ns);
+		check_fires(ns);
 		if (!ns->phase--)
 		{
 			ns->phase=59;
 			players_moved_dont_fire(ns); //when the players move, that may keep them from being able to fire (because they'll end up shooting their own bullet)
-			something_updated=1;
 			update_players(ns);
 			ClearPlayerDirKeys();
 		}
@@ -1386,45 +1380,28 @@ short NS_frame(NS *ns)
 		ns->reset_scheduled = 0;
 		NS_newround(ns, ns->width, ns->height);
 	}
-
-	if (something_updated)
-		NS_draw(ns);
-	
-	return NSF_NORMAL;
 }
 
-void NS_schedule_redraw()
-{
-	redraw_scheduled = 1;
-}
-
-//draws the tiles that were changed from last redraw
-//returns nonzero if something was actually redrawn
-short NS_draw(NS *ns)
+bool NS_draw(NS *ns, bool force)
 {
 	unsigned short x,y;
 	const signed char *board = ns->board;
 	const signed char *overlay = ns->overlay;
-	signed char *actual = ns->board + ns->width*ns->height;
-	short ret=0;
-	
-	if (!redraw_scheduled)
-		return 0;
-	
+	signed char *actual = ns->board_buffer;
+	bool ret = false;
+
 	for (y=0; y<ns->height; y++)
 	for (x=0; x<ns->width;  x++, board++, overlay++, actual++)
 	{
 		signed char thistile = *overlay<0 ? *board : *overlay;
 			//thistile = the board tile unless the corresponding overlay tile is used
-		if (*actual != thistile)
+		if (*actual != thistile || force)
 		{
 			*actual = thistile;
 			DrawCell(x, y, thistile);
-			ret=1;
+			ret = true;
 		}
 	}
-	
-	redraw_scheduled=0;
 	
 	return ret;
 }

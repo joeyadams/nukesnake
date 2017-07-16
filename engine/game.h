@@ -26,6 +26,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,20 +53,16 @@ void NS_newround(NS *ns, unsigned short width,unsigned short height);
 
 // Advance the state of the game by one step.
 // A step is 1/(60 * game speed) seconds.
-// TODO: Make FrameStatus a signalling variable in NS, and don't redraw the 
-short NS_frame(NS *ns); //returns one of FrameStatus
+// This will do nothing if NS::paused is set.
+void NS_frame(NS *ns);
 
-void NS_schedule_redraw();
-short NS_draw(NS *ns);
+// Draw any cells that changed since the last call to @NS_draw,
+// or every cell if @force is true.
+// Return true if any cells were drawn.
+bool NS_draw(NS *ns, bool force);
 
 NS_Player *NS_find_player_by_type(NS *ns, short type, const NS_Player *dont_pick);
 	//the argument is 'dont_pick' instead of 'not' because 'not' is a C++ keyword
-
-static inline void NS_redraw(NS *ns)
-{
-	NS_schedule_redraw();
-	NS_draw(ns);
-}
 
 //None of the max values should be zero
 #define PLAYER_MAX 2
@@ -80,14 +78,19 @@ static inline void NS_redraw(NS *ns)
 // Game state (plus extra info to optimize drawing).
 struct NS
 {
-	signed char *board; //board==NULL means there is no game open right now
-		//The board's data consists of two parts, each width*height bytes
-			//The current half is the cells the game engine will write to in order to request draws of cells
-			//The actual half is what is drawn to the screen at the last redraw
-		//Both board halves are used in NS_draw in order to bring the actual half up to date
+    // The current cells of the game, not including explosions and such.
+    // If this is NULL, no game has been started yet.
+	signed char *board;
+
+    // Where explosions and respawn animations are drawn.
+	signed char *overlay;
+
+    // The cells that were shown the last time NS_draw was called.
+    // This is used by NS_draw to only draw cells that changed.
+    signed char *board_buffer;
+
 	unsigned short width;
 	unsigned short height;
-	signed char *overlay; //This is where explosions and respawn animations are drawn
 	struct NS_Settings
 	{
 		unsigned short
@@ -105,7 +108,6 @@ struct NS
 	unsigned short paused:1, player_dying:1, reset_scheduled:1;
 
     // Set to 1 by NS_frame when any player's score or ammo count changes.
-    // The 
     unsigned short scores_changed:1;
 
 	struct NS_Player
@@ -173,7 +175,7 @@ enum TileTypes
 	AmmoPack, RocketPack, NukePack,
 	Mine, MineDetonator, Coal, Tree, Wall, Water, Swamp,
 	BlueTail, RedTail,
-	TILE_TYPE_COUNT, NullTile
+	TILE_TYPE_COUNT,
 };
 
 extern const char tile_class[TILE_TYPE_COUNT];
@@ -205,11 +207,6 @@ enum EffectTypes
 enum Directions
 {
 	NoDirection=0, Right, DownRight, Down, DownLeft, Left, UpLeft, Up, UpRight
-};
-
-enum FrameStatus
-{
-	NSF_NORMAL=0, NSF_SOMEONEDIED=1
 };
 
 enum EventTypes

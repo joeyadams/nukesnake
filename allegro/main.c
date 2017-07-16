@@ -193,7 +193,7 @@ static void game_idle(void)
 		NS_frame(ns);
 
 	// Draw the game state after these updates.
-	NS_redraw(ns);
+	NS_draw(ns, false);
 }
 
 long draw_count=0;
