@@ -37,6 +37,8 @@
 #include <stdio.h>
 #include <memory.h>
 
+#include "game.h"
+
 struct NS;
 
 typedef struct NS_Net
@@ -51,9 +53,9 @@ typedef struct NS_Net
 
 unsigned long rand_ulong(unsigned long n);
 unsigned long rand32(void);
-void DrawCell(short x,short y,short icon);
-void ClearScreen(void);
+void DrawCell(void *ctx, short x, short y, enum TileTypes icon);
 
+// TODO: Make GetPlayer* methods on gamestate (called outside of NS_frame).
 
 //returns most recent directional indication for a given player
 short GetPlayerDir(short type); //PT_Right=1, PT_Left=2 (, PT_Network=3)
@@ -78,7 +80,7 @@ void ClearPlayerDirKeys(void);
 
 //Reports an event to the glue.  In the future, this may include carnage reporting, for instance
 //Currently, it is just for spawning sounds
-void GlueEvent(short type, short param, short player, unsigned short x, unsigned short y);
+void GlueEvent(void *ctx, enum EventTypes type, short param, short player, unsigned short x, unsigned short y);
 
 // Called after any player's score or ammo count changes.
 void UpdateScores(struct NS *ns);

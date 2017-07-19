@@ -44,15 +44,17 @@ unsigned long rand_ulong(unsigned long n)
                 //this does theoretically have slight preference for lower numbers
 }
 
-void DrawCell(short x, short y, short icon)
+void DrawCell(void *ctx, short x, short y, enum TileTypes icon)
 {
+    (void)ctx;
+
 	if (icon<0 || icon>=TILE_TYPE_COUNT)
 	{
 		Bug("Icon number out of range (%d).",icon);
 		return;
 	}
 	y+=2;
-	blit(tiles,screen,0,icon<<4,x<<4,y<<4,16,16);
+	blit(tiles, screen, 0, (int)icon << 4, x<<4, y<<4, 16, 16);
 }
 
 //Clears the game board with floor; may be more efficient on old computers than redrawing a whole bunch of white tiles one by one
@@ -135,8 +137,9 @@ void ClearPlayerDirKeys(void)
 		PlayerKeyData[i].dir=0;
 }
 
-void GlueEvent(short type, short param, short player, unsigned short x, unsigned short y)
+void GlueEvent(void *ctx, enum EventTypes type, short param, short player, unsigned short x, unsigned short y)
 {
+    (void)ctx;
     (void)param;
     (void)player;
     (void)x;
@@ -154,12 +157,14 @@ void GlueEvent(short type, short param, short player, unsigned short x, unsigned
 			play_sound(S_Fire);
 			break;
 		case EV_RocketFired:
+        case EV_NukeFired:      // TODO: Use cooler sound
 			play_sound(S_Rocket);
 			break;
 		case EV_AmmoPickedUp:
 			play_sound(S_Ammo);
 			break;
 		case EV_RocketPickedUp:
+        case EV_NukePickedUp:   // TODO: Use cooler sound
 			play_sound(S_Getrocket);
 			break;
 		case EV_PlayerLost:

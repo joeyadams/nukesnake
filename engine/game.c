@@ -109,17 +109,18 @@ const char tile_class[TILE_TYPE_COUNT]=
 //x and y are in case special effects surrounding events are implemented (they currently aren't used)
 static void event(NS *ns, short type, short param, short player, unsigned short x, unsigned short y)
 {
-	NS_Player *p = ns->players;
-	unsigned short count = PLAYER_MAX;
-	
-	GlueEvent(type, param, player, x, y);
-	
-	for (;count--;p++)
-	{
-		if (p->type != PT_AI)
-			continue;
-		ai_event(p, type, param, player, x, y);
-	}
+    NS_Player *p = ns->players;
+    unsigned short count = PLAYER_MAX;
+    
+    if (ns->glue.Event != NULL)
+        ns->glue.Event(ns->glue.ctx, type, param, player, x, y);
+    
+    for (;count--;p++)
+    {
+        if (p->type != PT_AI)
+            continue;
+        ai_event(p, type, param, player, x, y);
+    }
 }
 
 #define cell(x,y) (ns->board[(y)*ns->width+(x)])
@@ -1384,24 +1385,27 @@ void NS_frame(NS *ns)
 
 bool NS_draw(NS *ns, bool force)
 {
-	unsigned short x,y;
-	const signed char *board = ns->board;
-	const signed char *overlay = ns->overlay;
-	signed char *actual = ns->board_buffer;
-	bool ret = false;
+    unsigned short x,y;
+    const signed char *board = ns->board;
+    const signed char *overlay = ns->overlay;
+    signed char *actual = ns->board_buffer;
+    bool ret = false;
 
-	for (y=0; y<ns->height; y++)
-	for (x=0; x<ns->width;  x++, board++, overlay++, actual++)
-	{
-		signed char thistile = *overlay<0 ? *board : *overlay;
-			//thistile = the board tile unless the corresponding overlay tile is used
-		if (*actual != thistile || force)
-		{
-			*actual = thistile;
-			DrawCell(x, y, thistile);
-			ret = true;
-		}
-	}
-	
-	return ret;
+    for (y=0; y<ns->height; y++)
+    for (x=0; x<ns->width;  x++, board++, overlay++, actual++)
+    {
+        signed char thistile = *overlay<0 ? *board : *overlay;
+            //thistile = the board tile unless the corresponding overlay tile is used
+        if (*actual != thistile || force)
+        {
+            *actual = thistile;
+
+            if (ns->glue.DrawCell != NULL)
+                ns->glue.DrawCell(ns->glue.ctx, x, y, thistile);
+
+            ret = true;
+        }
+    }
+    
+    return ret;
 }

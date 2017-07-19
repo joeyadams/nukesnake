@@ -273,6 +273,8 @@ int main(void)
 	clear_to_color(screen, makecol(255,255,255));
 	
 	NS_init(ns);
+    ns->glue.DrawCell = DrawCell;
+    ns->glue.Event = GlueEvent;
 	
 	if (ns->settings.sound)
 		load_sounds();

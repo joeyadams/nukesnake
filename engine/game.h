@@ -34,11 +34,20 @@ extern "C" {
 
 #define MAX_FRAMEDROP 10
 
+// Forward declarations
 struct NS;
 struct NS_Settings;
 struct NS_Player;
 struct NS_Bullet;
 struct NS_Effect;
+enum TileTypes;
+enum TileClasses;
+enum PlayerTypes;
+enum BulletTypes;
+enum EffectTypes;
+enum Directions;
+enum EventTypes;
+enum MeansOfDeath;
 
 typedef struct NS NS;
 typedef struct NS_Settings NS_Settings;
@@ -46,8 +55,8 @@ typedef struct NS_Player NS_Player;
 typedef struct NS_Bullet NS_Bullet;
 typedef struct NS_Effect NS_Effect;
 
-void NS_init(NS *ns);
-void NS_uninit(NS *ns);
+void NS_init(NS *ns);   // constructor
+void NS_uninit(NS *ns); // destructor
 void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gametype);
 void NS_newround(NS *ns, unsigned short width,unsigned short height);
 
@@ -78,6 +87,25 @@ NS_Player *NS_find_player_by_type(NS *ns, short type, const NS_Player *dont_pick
 // Game state (plus extra info to optimize drawing).
 struct NS
 {
+    // Callbacks implemented by the frontend.
+    // Any of these callbacks may be null.
+    struct NS_Glue
+    {
+        // Context passed to all glue callbacks.
+        void *ctx;
+
+        // Draw a cell at the specified coordinates.  (0,0) is the top-left corner.
+        // This is called by NS_draw.
+        void (*DrawCell)(void *ctx, short x, short y, enum TileTypes icon);
+
+        // Called when an event occurs in the game, as a hook for sounds, player death messages, etc.
+        // This is called by NS_frame.
+        //
+        // @param:  Event-specific parameter, e.g. enum MeansOfDeath for EV_PlayerKilled.
+        // @player: Index of the player in the players array, or -1 if not applicable.
+        void (*Event)(void *ctx, enum EventTypes type, short param, short player, unsigned short x, unsigned short y);
+    } glue;
+
     // The current cells of the game, not including explosions and such.
     // If this is NULL, no game has been started yet.
 	signed char *board;
