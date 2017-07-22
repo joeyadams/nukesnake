@@ -126,7 +126,8 @@ struct NS
         void (*DrawCell)(void *ctx, short x, short y, enum TileTypes icon);
 
         // Called when an event occurs in the game, as a hook for sounds, player death messages, etc.
-        // This is called by NS_frame.
+        // This is called by NS_frame.  It may also be called by other methods that change the gamestate,
+        // such as NS_newgame and NS_newround.
         //
         // @param:  Event-specific parameter, e.g. enum MeansOfDeath for EV_PlayerKilled.
         // @player: Index of the player in the players array, or -1 if not applicable.
