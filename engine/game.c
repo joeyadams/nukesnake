@@ -153,10 +153,15 @@ uint32_t NS_random(NS *ns, uint32_t n)
 
 void NS_seed(NS *ns, uint32_t n)
 {
-    // The magic number below is one of the default values Marsaglia used;
+    // These magic numbers are the default values Marsaglia used;
     // see https://github.com/EddieCameron/CellGen/blob/master/SimpleRNG.cs
-    ns->random.w = n;
+    ns->random.w = 521288629;
     ns->random.z = 362436069;
+
+    // The seed must not be zero, or else the RNG will repeatedly return numbers
+    // where the lower half is all zeros.
+    if (n != 0)
+        ns->random.w = n;
 
     // Scramble the seed that was given, and ensure that .z is randomly seeded as well.
     ns->random.z = NS_rand32(ns);
