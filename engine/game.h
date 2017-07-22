@@ -50,6 +50,7 @@ enum EffectTypes;
 enum Directions;
 enum EventTypes;
 enum MeansOfDeath;
+enum NS_LogLevel;
 
 typedef struct NS NS;
 typedef struct NS_Settings NS_Settings;
@@ -95,6 +96,10 @@ uint32_t NS_random(NS *ns, uint32_t n);
 //  * This is provided for convenience, as the actual random seed is two 32-bit numbers.
 void NS_seed(NS *ns, uint32_t n);
 
+// Generate a diagnostic log message, e.g. because something invalid or unexpected was detected.
+// This does nothing if no Log callback was supplied in the NS_Glue.
+void NS_log(NS *ns, enum NS_LogLevel logLevel, const char *format, ...);
+
 //None of the max values should be zero
 #define PLAYER_MAX 2
 #define BULLET_MAX 256
@@ -126,6 +131,10 @@ struct NS
         // @param:  Event-specific parameter, e.g. enum MeansOfDeath for EV_PlayerKilled.
         // @player: Index of the player in the players array, or -1 if not applicable.
         void (*Event)(void *ctx, enum EventTypes type, short param, short player, unsigned short x, unsigned short y);
+
+        // Called when the game engine generates a diagnostic log message,
+        // e.g. because something invalid or unexpected was detected.
+        void (*Log)(void *ctx, enum NS_LogLevel logLevel, char *message);
     } glue;
 
     // The current cells of the game, not including explosions and such.
@@ -276,6 +285,15 @@ enum MeansOfDeath
 {
 	MOD_Player, MOD_Bullet, MOD_Rocket, MOD_Nuke, MOD_Explosion, MOD_NukeRadius, MOD_Mine, MOD_Coal, MOD_Wall, MOD_Tail, MOD_ShotHimself, MOD_MineDetonator
 };
+
+enum NS_LogLevel
+{
+    NSL_Error,
+    NSL_Glitch,
+    NSL_Bug,
+    NSL_Fatal,
+};
+
 
 #ifdef __cplusplus
 }

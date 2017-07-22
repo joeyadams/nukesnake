@@ -35,6 +35,8 @@
 #include "glue.h"
 #include "menu.h"
 
+#include <stdarg.h>
+
 // Needed to seed the RNG.
 #include <time.h>
 
@@ -167,6 +169,21 @@ void NS_seed(NS *ns, uint32_t n)
     ns->random.z = NS_rand32(ns);
 }
 
+void NS_log(NS *ns, enum NS_LogLevel logLevel, const char *format, ...)
+{
+    if (ns->glue.Log == NULL)
+        return;
+
+    char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+
+    ns->glue.Log(ns->glue.ctx, logLevel, buffer);
+
+    va_end(args);
+}
+
 #define cell(x,y) (ns->board[(y)*ns->width+(x)])
 #define cell_overlay(x,y) (ns->overlay[(y)*ns->width+(x)])
 #define move_coord(x,y,direction) _move_coord(ns, &(x), &(y), direction)
@@ -186,12 +203,12 @@ void _move_coord(NS *ns, unsigned short *xo, unsigned short *yo, short direction
 		*y -= ns->height;
 }
 
-static short average_dir(short a, short b)
+static short average_dir(NS *ns, short a, short b)
 {
 	short ret=vec_dir((dir_vec(a)[0]+dir_vec(b)[0])/2, (dir_vec(a)[1]+dir_vec(b)[1])/2);
 	if (ret<0 || ret>=8)
 	{
-		Bug("vec_dir returned an invalid direction %d.",ret);
+		NS_log(ns, NSL_Bug, "vec_dir returned an invalid direction %d.", ret);
 		ret=0;
 	}
 	return ret;
@@ -228,7 +245,7 @@ signed char *find_empty_space(NS *ns)
 	empty_count = count_empty_spaces(ns);
 	if (!empty_count)
 	{
-		Glitch("No empty spaces available; writing over the topleft tile.");
+		NS_log(ns, NSL_Glitch, "No empty spaces available; writing over the topleft tile.");
 			//You would have to have a LOT of bullets flying around or have all the tiles filled up for this to happen.
 		return board;
 	}
@@ -238,7 +255,7 @@ signed char *find_empty_space(NS *ns)
 		if (!*board && *overlay<0 && !selected--)
 			return board;
 	
-	Bug("find_empty_space loop fell through.");
+	NS_log(ns, NSL_Bug, "find_empty_space loop fell through.");
 	return ns->board;
 }
 
@@ -276,7 +293,7 @@ static void respawn_player(NS *ns, NS_Player *player, short wait)
 	
 	if (player->alive)
 	{
-		Bug("respawn_player called while player still alive.");
+		NS_log(ns, NSL_Bug, "respawn_player called while player still alive.");
 		return;
 	}
 	
@@ -332,7 +349,7 @@ static void setup_board(NS *ns, unsigned short width, unsigned short height)
 	if (ns->board == NULL || ns->overlay == NULL || ns->board_buffer == NULL)
 	{
         free_board(ns);
-		Fatal("Board size %ux%u could not be allocated.",width,height);
+		NS_log(ns, NSL_Fatal, "Board size %ux%u could not be allocated.", width, height);
 		exit(-1);
 	}
 
@@ -571,7 +588,7 @@ static short bounce(NS *ns, unsigned short *x, unsigned short *y, char *directio
 	if (cell(oldx,oldy)==Wall)
 	{
 		short postdir = *direction;
-		*direction = average_dir(old_direction,*direction);
+		*direction = average_dir(ns, old_direction,*direction);
 		return postdir;
 	}
 	return *direction;
@@ -610,7 +627,7 @@ static NS_Player *find_player(NS *ns, unsigned short x, unsigned short y, NS_Pla
 		if (obj->type && obj!=not && obj->x == x && obj->y == y)
 			return obj;
 	
-	Glitch("Cell shows a player that doesn't exist.");
+	NS_log(ns, NSL_Glitch, "Cell shows a player that doesn't exist.");
 	
 	return NULL;
 }
@@ -624,7 +641,7 @@ static NS_Bullet *find_bullet(NS *ns, unsigned short x, unsigned short y, NS_Bul
 		if (obj->type && obj!=not && obj->x == x && obj->y == y)
 			return obj;
 	
-	Glitch("Cell shows a bullet that doesn't exist.");
+	NS_log(ns, NSL_Glitch, "Cell shows a bullet that doesn't exist.");
 	
 	return NULL;
 }
@@ -640,7 +657,7 @@ static NS_Effect *find_effect(NS *ns, unsigned short x, unsigned short y, NS_Eff
 	
 	if (cell_overlay(x,y)>=0)
 	{
-		Glitch("Cell shows an effect that doesn't exist.");
+		NS_log(ns, NSL_Glitch, "Cell shows an effect that doesn't exist.");
 	}
 	
 	return NULL;
@@ -732,7 +749,7 @@ static NS_Effect *new_effect(NS *ns, short type,unsigned short x,unsigned short 
 					break;
 			if ((short)count+1==0)
 			{ //no non-respawn effects exist
-				Bug("Sorry, you couldn't respawn because of this bug:  player count is greater than EFFECT_MAX");
+				NS_log(ns, NSL_Bug, "Sorry, you couldn't respawn because of this bug:  player count is greater than EFFECT_MAX");
 					//I was verbose here because this bug will cause a player
 					//  to not enter the game, a very noticeable problem.
 					//If you are dealing with this problem, the quick fix is
@@ -1227,7 +1244,7 @@ static short check_fires(NS *ns)
 				
 				if (!bullet_type)
 				{
-					Glitch("Error determining fired bullet type.");
+					NS_log(ns, NSL_Glitch, "Error determining fired bullet type.");
 					continue;
 				}
 				
@@ -1446,11 +1463,16 @@ bool NS_draw(NS *ns, bool force)
         if (*actual != thistile || force)
         {
             *actual = thistile;
+            ret = true;
+
+            if (thistile < 0 || thistile >= TILE_TYPE_COUNT)
+            {
+                NS_log(ns, NSL_Bug, "Cell (%d, %d) contains invalid tile (%d).", (int)x, (int)y, (int)thistile);
+                continue;
+            }
 
             if (ns->glue.DrawCell != NULL)
                 ns->glue.DrawCell(ns->glue.ctx, x, y, thistile);
-
-            ret = true;
         }
     }
     

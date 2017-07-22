@@ -31,11 +31,6 @@ void DrawCell(void *ctx, short x, short y, enum TileTypes icon)
 {
     (void)ctx;
 
-	if (icon<0 || icon>=TILE_TYPE_COUNT)
-	{
-		Bug("Icon number out of range (%d).",icon);
-		return;
-	}
 	y+=2;
 	blit(tiles, screen, 0, (int)icon << 4, x<<4, y<<4, 16, 16);
 }
@@ -156,6 +151,27 @@ void GlueEvent(void *ctx, enum EventTypes type, short param, short player, unsig
 	}
 }
 
+void GlueLog(void *ctx, enum NS_LogLevel logLevel, char *message)
+{
+    (void)ctx;
+
+    switch (logLevel)
+    {
+        case NSL_Error:
+            fprintf(stderr, "ERROR:  %s\n", message);
+            break;
+        case NSL_Glitch:
+            fprintf(stderr, "GLITCH:  %s\n", message);
+            break;
+        case NSL_Bug:
+            fprintf(stderr, "BUG:  %s\n", message);
+            break;
+        case NSL_Fatal:
+            fprintf(stderr, "FATAL:  %s\n", message);
+            break;
+    }
+}
+
 void UpdateScores(NS *ns)
 {
 	const NS_Player *left, *right;
@@ -168,7 +184,7 @@ void UpdateScores(NS *ns)
 		right = NS_find_player_by_type(ns, PT_AI, left);
 	if (!left || !right)
 	{
-		Bug("Error finding left/right players to print score.");
+		NS_log(ns, NSL_Bug, "Error finding left/right players to print score.");
 		buffer[0]=0;
 		goto print_buffer;
 	}

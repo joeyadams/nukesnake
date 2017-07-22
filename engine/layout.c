@@ -155,7 +155,7 @@ const char *micro_testing_board_mines=
 	"WWWWWWWWWWWWWWWWWWWW"
 };
 
-static signed char letter_to_tile(char c)
+static signed char letter_to_tile(NS *ns, char c)
 {
 	switch (c)
 	{
@@ -178,7 +178,7 @@ static signed char letter_to_tile(char c)
 		case 'P':
 			return Swamp;
 	}
-	Error("Bad tile character \'%c\'",c);
+	NS_log(ns, NSL_Error, "Bad tile character \'%c\'", c);
 	return Floor;
 }
 
@@ -187,7 +187,7 @@ static void setup_testing_board(NS *ns, const char *init)
 	signed char *board = ns->board;
 	unsigned long count = ns->width * ns->height;
 	for (;count--;init++, board++)
-		*board = letter_to_tile(*init);
+		*board = letter_to_tile(ns, *init);
 }
 
 typedef struct coord

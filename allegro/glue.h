@@ -46,11 +46,6 @@ typedef struct NS_Net
 	
 } NS_Net;
 
-#define Error(str,...) fprintf(stderr,"ERROR:  " str "\n", ##__VA_ARGS__ )
-#define Glitch(str,...) fprintf(stderr,"GLITCH:  " str "\n", ##__VA_ARGS__ )
-#define Bug(str,...) fprintf(stderr,"BUG:  " str "\n", ##__VA_ARGS__ )
-#define Fatal(str,...) fprintf(stderr,"FATAL:  " str "\n", ##__VA_ARGS__ )
-
 void DrawCell(void *ctx, short x, short y, enum TileTypes icon);
 
 // TODO: Make GetPlayer* methods on gamestate (called outside of NS_frame).
@@ -79,6 +74,8 @@ void ClearPlayerDirKeys(void);
 //Reports an event to the glue.  In the future, this may include carnage reporting, for instance
 //Currently, it is just for spawning sounds
 void GlueEvent(void *ctx, enum EventTypes type, short param, short player, unsigned short x, unsigned short y);
+
+void GlueLog(void *ctx, enum NS_LogLevel logLevel, char *message);
 
 // Called after any player's score or ammo count changes.
 void UpdateScores(struct NS *ns);

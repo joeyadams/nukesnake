@@ -85,7 +85,7 @@ void play_sound(short s)
 {
 	if (s<0 || s>=S_TypeCount)
 	{
-		Bug("Sound index %d out of range.",s);
+		fprintf(stderr, "BUG:  Sound index %d out of range.\n", (int)s);
 		return;
 	}
 	if (!ns->settings.sound)
@@ -275,6 +275,7 @@ int main(void)
 	NS_init(ns);
     ns->glue.DrawCell = DrawCell;
     ns->glue.Event = GlueEvent;
+    ns->glue.Log = GlueLog;
 	
 	if (ns->settings.sound)
 		load_sounds();
