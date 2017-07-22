@@ -237,7 +237,7 @@ void InitMap(NS *ns)
 				          board[i+ns->width-1]+board[i+ns->width]+board[i+ns->width+1];
 				average/=9;
 				//add random delta
-				if (rand32()&1)
+				if (NS_rand32(ns) & 1)
 					average+=delta;
 				else
 					average-=delta;
@@ -278,15 +278,15 @@ void InitMap(NS *ns)
 		for (n=0;n<2;n++) //once for trees, once for rivers
 		{
 			there = n?Tree:Water;
-			x = (rand_ulong(ns->width)+ns->width) / 3;
-			y = (rand_ulong(ns->height)+ns->height) / 3;
-			e = rand_ulong(total_squares);
+			x = (NS_random(ns, ns->width)+ns->width) / 3;
+			y = (NS_random(ns, ns->height)+ns->height) / 3;
+			e = NS_random(ns, total_squares);
 			for (i=0;i<e;i++)
 			{
 				map_index = y*ns->width + x;
 				board[map_index] = there;
 				board[map_index+1] = there;
-				switch (rand_ulong(4))
+				switch (NS_random(ns, 4))
 				{
 					case 0:
 						break;
@@ -300,7 +300,7 @@ void InitMap(NS *ns)
 							y--;
 						break;
 				}
-				switch (rand_ulong(4))
+				switch (NS_random(ns, 4))
 				{
 					case 0:
 						break;
@@ -315,10 +315,10 @@ void InitMap(NS *ns)
 						break;
 				}
 				//grow a swamp, forest, or rock garden
-				if (!rand_ulong(25))
+				if (!NS_random(ns, 25))
 				{
 					signed char selections[4] = {Coal, Swamp, Tree, Water};
-					there = selections[rand_ulong(4)];
+					there = selections[NS_random(ns, 4)];
 				}
 			}
 		}
@@ -331,12 +331,12 @@ void InitMap(NS *ns)
 		unsigned short min = ns->width;
 		if (ns->height<min)
 			min = ns->height;
-		cluster_size.y = rand_ulong(min);
+		cluster_size.y = NS_random(ns, min);
 		if (cluster_size.y == 0)
 			cluster_size.y = 1;
 		cluster_size.x = cluster_size.y;
-		cluster_loc.y = rand_ulong(ns->height - cluster_size.y);
-		cluster_loc.x = rand_ulong(ns->width - cluster_size.x);
+		cluster_loc.y = NS_random(ns, ns->height - cluster_size.y);
+		cluster_loc.x = NS_random(ns, ns->width - cluster_size.x);
 	}
 	else
 	{
@@ -351,9 +351,9 @@ void InitMap(NS *ns)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of mines on blank ground (2% max)
-		count = rand_ulong(total_squares) / 50;
+		count = NS_random(ns, total_squares) / 50;
 		#else
-		count = rand_ulong(total_squares) / 20;
+		count = NS_random(ns, total_squares) / 20;
 		#endif
 		
 		for (i=0; i<count; i++)
@@ -361,8 +361,8 @@ void InitMap(NS *ns)
 			for (try=0; try<25; try++)
 			{
 				//modified by Joey Adams:  moved cluster_loc.x and cluster_loc.y outside of the random function for true clusters to happen
-				x = rand_ulong(cluster_size.x) + cluster_loc.x;
-				y = rand_ulong(cluster_size.y) + cluster_loc.y;
+				x = NS_random(ns, cluster_size.x) + cluster_loc.x;
+				y = NS_random(ns, cluster_size.y) + cluster_loc.y;
 				map_index = (long)y * (long)ns->width + (long)x;
 				if (board[map_index] == Floor)
 				{
@@ -382,16 +382,16 @@ void InitMap(NS *ns)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of ammo packs (1% max)
-		count = rand_ulong(total_squares) / 100;
+		count = NS_random(ns, total_squares) / 100;
 		#else
-		count = rand_ulong(total_squares) / 40;
+		count = NS_random(ns, total_squares) / 40;
 		#endif
 		
 		for (i=0; i<count; i++)
 		{
 			//modified by Joey Adams:  see the mines section
-			x = rand_ulong(cluster_size.x) + cluster_loc.x;
-			y = rand_ulong(cluster_size.y) + cluster_loc.y;
+			x = NS_random(ns, cluster_size.x) + cluster_loc.x;
+			y = NS_random(ns, cluster_size.y) + cluster_loc.y;
 			map_index = (long)y * (long)ns->width + (long)x;
 			board[map_index] = AmmoPack;
 		}
@@ -403,16 +403,16 @@ void InitMap(NS *ns)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of rockets (0.5% max)
-		count = rand_ulong(total_squares) / 200;
+		count = NS_random(ns, total_squares) / 200;
 		#else
-		count = rand_ulong(total_squares) / 80;
+		count = NS_random(ns, total_squares) / 80;
 		#endif
 		
 		for (i=0; i<count; i++)
 		{
 			//modified by Joey Adams:  see the mines section
-			x = rand_ulong(cluster_size.x) + cluster_loc.x;
-			y = rand_ulong(cluster_size.y) + cluster_loc.y;
+			x = NS_random(ns, cluster_size.x) + cluster_loc.x;
+			y = NS_random(ns, cluster_size.y) + cluster_loc.y;
 			map_index = (long)y * (long)ns->width + (long)x;
 			board[map_index] = RocketPack;
 		}
@@ -423,15 +423,15 @@ void InitMap(NS *ns)
 	{
 		#if SMALL_DEVICE==0
 		//randomly place a random number of nukes (0.2% max)
-		count = rand_ulong(total_squares) / 400;
+		count = NS_random(ns, total_squares) / 400;
 		#else
-		count = rand_ulong(total_squares) / 160;
+		count = NS_random(ns, total_squares) / 160;
 		#endif
 		
 		for (i=0; i<count; i++) {
 			//modified by Joey Adams:  see the mines section
-			x = rand_ulong(cluster_size.x) + cluster_loc.x;
-			y = rand_ulong(cluster_size.y) + cluster_loc.y;
+			x = NS_random(ns, cluster_size.x) + cluster_loc.x;
+			y = NS_random(ns, cluster_size.y) + cluster_loc.y;
 			map_index = (long)y * (long)ns->width + (long)x;
 			board[map_index] = NukePack;
 		}

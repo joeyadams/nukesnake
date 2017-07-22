@@ -36,35 +36,41 @@ static void init_position(NS_Player *player)
 	// player->cs.ai.last_direction = player->direction;
 }
 
-void ai_init(NS_Player *player)
+void ai_init(NS *ns, NS_Player *player)
 {
+    (void)ns;
 	init_position(player);
 }
 
-void ai_newround(NS_Player *player)
+void ai_newround(NS *ns, NS_Player *player)
 {
+    (void)ns;
 	init_position(player);
 }
 
-void ai_think(NS_Player *player)
+void ai_think(NS *ns, NS_Player *player)
 {
+    (void)ns;
 	(void)player;
 }
 
-short ai_get_direction(NS_Player *player)
+short ai_get_direction(NS *ns, NS_Player *player)
 {
+    (void)ns;
 	(void)player;
-	return 1+rand_ulong(8);
+	return 1 + NS_random(ns, 8);
 }
 
-short ai_get_fire(NS_Player *player)
+short ai_get_fire(NS *ns, NS_Player *player)
 {
+    (void)ns;
 	(void)player;
-	return !rand_ulong(100);
+	return !NS_random(ns, 100);
 }
 
-void ai_event(NS_Player *receiver, short type, short param, short player, unsigned short x, unsigned short y)
+void ai_event(NS *ns, NS_Player *receiver, short type, short param, short player, unsigned short x, unsigned short y)
 {
+    (void)ns;
     (void)receiver;
     (void)type;
     (void)param;

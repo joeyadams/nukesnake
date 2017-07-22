@@ -51,8 +51,6 @@ typedef struct NS_Net
 #define Bug(str,...) fprintf(stderr,"BUG:  " str "\n", ##__VA_ARGS__ )
 #define Fatal(str,...) fprintf(stderr,"FATAL:  " str "\n", ##__VA_ARGS__ )
 
-unsigned long rand_ulong(unsigned long n);
-unsigned long rand32(void);
 void DrawCell(void *ctx, short x, short y, enum TileTypes icon);
 
 // TODO: Make GetPlayer* methods on gamestate (called outside of NS_frame).

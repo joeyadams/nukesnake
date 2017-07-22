@@ -27,23 +27,6 @@
 #include "game.h"
 #include "main.h"
 
-unsigned long rand32(void)
-{
-        //randintany assumes RAND_MAX is 32767 or any greater value of 2^n-1 where n is an integer (like 65535, 131071...).
-        unsigned long ret=rand();
-        ret|=((unsigned long)rand())<<15;
-        ret|=((unsigned long)rand())<<30;
-        return ret;
-}
-
-unsigned long rand_ulong(unsigned long n)
-{
-        if (n<=1)
-                return 0;
-        return rand32()%n;
-                //this does theoretically have slight preference for lower numbers
-}
-
 void DrawCell(void *ctx, short x, short y, enum TileTypes icon)
 {
     (void)ctx;

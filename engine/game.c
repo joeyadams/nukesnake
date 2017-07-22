@@ -21,6 +21,12 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
+ *
+ *
+ * This file contains code derived from SimpleRNG, by John D. Cook and licensed
+ * under the 2-clause BSD license:
+ *
+ * https://www.codeproject.com/Articles/25172/Simple-Random-Number-Generation
  */
 
 #include "game.h"
@@ -28,6 +34,9 @@
 #include "ai.h"
 #include "glue.h"
 #include "menu.h"
+
+// Needed to seed the RNG.
+#include <time.h>
 
 //TODO:  When placing players, make them not face dumb directions
 
@@ -119,8 +128,38 @@ static void event(NS *ns, short type, short param, short player, unsigned short 
     {
         if (p->type != PT_AI)
             continue;
-        ai_event(p, type, param, player, x, y);
+        ai_event(ns, p, type, param, player, x, y);
     }
+}
+
+uint32_t NS_rand32(NS *ns)
+{
+    NS_Random *rng = &ns->random;
+
+    // SimpleRNG: https://www.codeproject.com/Articles/25172/Simple-Random-Number-Generation
+    rng->z = 36969 * (rng->z & 65535) + (rng->z >> 16);
+    rng->w = 18000 * (rng->w & 65535) + (rng->w >> 16);
+    return (rng->z << 16) + rng->w;
+}
+
+uint32_t NS_random(NS *ns, uint32_t n)
+{
+    if (n <= 1)
+        return 0;
+
+    // This does theoretically have slight preference for lower numbers.
+    return NS_rand32(ns) % n;
+}
+
+void NS_seed(NS *ns, uint32_t n)
+{
+    // The magic number below is one of the default values Marsaglia used;
+    // see https://github.com/EddieCameron/CellGen/blob/master/SimpleRNG.cs
+    ns->random.w = n;
+    ns->random.z = 362436069;
+
+    // Scramble the seed that was given, and ensure that .z is randomly seeded as well.
+    ns->random.z = NS_rand32(ns);
 }
 
 #define cell(x,y) (ns->board[(y)*ns->width+(x)])
@@ -170,7 +209,9 @@ unsigned long count_empty_spaces(NS *ns)
 	return ret;
 }
 
-//This function will return a non-empty space if no empty spaces are available, otherwise it will randomly pick a space
+// Find a space on the board for a player to spawn.
+// This will try to pick a random empty space, but if no empty spaces
+// are available, it will just return an arbitrary non-empty space.
 signed char *find_empty_space(NS *ns)
 {
 	signed char *board = ns->board;
@@ -186,7 +227,7 @@ signed char *find_empty_space(NS *ns)
 			//You would have to have a LOT of bullets flying around or have all the tiles filled up for this to happen.
 		return board;
 	}
-	selected = rand_ulong(empty_count);
+	selected = NS_random(ns, empty_count);
 	
 	for (;count--;board++,overlay++)
 		if (!*board && *overlay<0 && !selected--)
@@ -234,7 +275,7 @@ static void respawn_player(NS *ns, NS_Player *player, short wait)
 		return;
 	}
 	
-	player->direction = 1+rand_ulong(8);
+	player->direction = 1 + NS_random(ns, 8);
 	
 	if (!wait)
 	{
@@ -342,7 +383,7 @@ static void explode(NS *ns, unsigned short x, unsigned short y, short trigger_di
 			Actually, the original NukeSnake would fire diagonal bullets in explosions even if diagonals were off
 		*/
 		new_bullet(ns, BT_Bullet, x, y, dir);
-		//new_bullet(ns, rand_ulong(2)?BT_Bullet:BT_Rocket, x, y, dir); //Mega insanity
+		//new_bullet(ns, NS_random(ns, 2)?BT_Bullet:BT_Rocket, x, y, dir); //Mega insanity
 	}
 }
 
@@ -536,20 +577,20 @@ static signed char tail_icon(NS_Player *obj)
 	return obj->icon-BluePiece+BlueTail;
 }
 
-short get_player_direction(NS_Player *player)
+short get_player_direction(NS *ns, NS_Player *player)
 {
 	if (player->type == PT_Right || player->type == PT_Left)
 		return GetPlayerDir(player->type);
 	else //if (ptr->type == PT_AI)
-		return ai_get_direction(player);
+		return ai_get_direction(ns, player);
 }
 
-short get_player_fire(NS_Player *player)
+short get_player_fire(NS *ns, NS_Player *player)
 {
 	if (player->type == PT_Right || player->type == PT_Left)
 		return GetPlayerFire(player->type);
 	else //if (ptr->type == PT_AI)
-		return ai_get_fire(player);
+		return ai_get_fire(ns, player);
 }
 
 
@@ -628,7 +669,7 @@ static NS_Player *new_player(NS *ns, short type, short icon)
 	memset(obj,0,sizeof(NS_Player));
 	obj->type = type;
 	obj->icon = icon;
-	obj->direction = 1+rand_ulong(8);
+	obj->direction = 1 + NS_random(ns, 8);
 	obj->bullet_count = 5;
 	obj->rocket_count = 0;
 	obj->nuke_count = 0;
@@ -637,7 +678,7 @@ static NS_Player *new_player(NS *ns, short type, short icon)
 		respawn_player(ns, obj,0);
 	
 	if (obj->type == PT_AI)
-		ai_init(obj);
+		ai_init(ns, obj);
 	
 	return obj;
 }
@@ -717,9 +758,9 @@ static NS_Effect *new_effect(NS *ns, short type,unsigned short x,unsigned short 
 	return obj;
 }
 
-static void update_player_direction(NS_Player *obj)
+static void update_player_direction(NS *ns, NS_Player *obj)
 {
-	short newdirection = get_player_direction(obj);
+	short newdirection = get_player_direction(ns, obj);
 	if (newdirection) //this is the gliding behavior
 		obj->direction = newdirection;
 }
@@ -735,7 +776,7 @@ static void update_player(NS *ns, NS_Player *obj)
 	NS_Player *p;
 	NS_Bullet *b;
 	
-	update_player_direction(obj);
+	update_player_direction(ns, obj);
 	
 	if (!obj->alive)
 		return;
@@ -1140,7 +1181,7 @@ static short check_fires(NS *ns)
 		{
 			if (ptr->fire_phase < -bullet_maxphase)
 				ptr->fire_phase = -bullet_maxphase;
-			if (get_player_fire(ptr))
+			if (get_player_fire(ns, ptr))
 			//if ((ns->phase == 0 || ns->phase == 39 )&& ptr->type == PT_Right)
 			{
 				unsigned short x=ptr->x, y=ptr->y;
@@ -1189,7 +1230,7 @@ static short check_fires(NS *ns)
 				//By this point, bullet_type is a valid BT_*
 				something_updated=1;
 				ptr->fire_phase = bullet_maxphase-1;
-				update_player_direction(ptr); //so the player can fire the direction he wanted to most recently
+				update_player_direction(ns, ptr); //so the player can fire the direction he wanted to most recently
 				
 				move_coord(x,y,ptr->direction);
 				if (ns->settings.rubber_walls && cell(x,y)==Wall)
@@ -1271,6 +1312,7 @@ void NS_init(NS *ns)
 {
     memset(ns, 0, sizeof(NS));
 	ns->settings = defaultSettings;
+    NS_seed(ns, time(NULL));
 }
 
 void NS_uninit(NS *ns)
@@ -1310,7 +1352,7 @@ void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gamety
 		for (;count--;p++)
 		{
 			if (p->type == PT_AI)
-				ai_newround(p);
+				ai_newround(ns, p);
 		}
 	}
 	UpdateScores(ns);
@@ -1341,7 +1383,7 @@ void NS_newround(NS *ns, unsigned short width,unsigned short height)
 		for (;count--;p++)
 		{
 			if (p->type == PT_AI)
-				ai_newround(p);
+				ai_newround(ns, p);
 		}
 	}
 }
@@ -1371,7 +1413,7 @@ void NS_frame(NS *ns)
 			for (;count--;p++)
 			{
 				if (p->type == PT_AI)
-					ai_think(p);
+					ai_think(ns, p);
 			}
 		}
 	}

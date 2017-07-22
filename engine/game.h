@@ -27,6 +27,7 @@
 #define GAME_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +41,7 @@ struct NS_Settings;
 struct NS_Player;
 struct NS_Bullet;
 struct NS_Effect;
+struct NS_Random;
 enum TileTypes;
 enum TileClasses;
 enum PlayerTypes;
@@ -54,6 +56,7 @@ typedef struct NS_Settings NS_Settings;
 typedef struct NS_Player NS_Player;
 typedef struct NS_Bullet NS_Bullet;
 typedef struct NS_Effect NS_Effect;
+typedef struct NS_Random NS_Random;
 
 void NS_init(NS *ns);   // constructor
 void NS_uninit(NS *ns); // destructor
@@ -72,6 +75,25 @@ bool NS_draw(NS *ns, bool force);
 
 NS_Player *NS_find_player_by_type(NS *ns, short type, const NS_Player *dont_pick);
 	//the argument is 'dont_pick' instead of 'not' because 'not' is a C++ keyword
+
+// Generate a random 32-bit integer using the RNG embedded in the gamestate.
+// This is exposed for use by layout (map generation) and AI.
+//
+// NOTE: This should only be called from within NS_frame (including AI callbacks).
+// In a networked game, all clients execute the game, layout, and even AI logic
+// in isolation, and thus need to produce identical results for these.
+uint32_t NS_rand32(NS *ns);
+
+// Generate a random number from 0 to n-1.
+// This uses NS_rand32; see note above.
+//
+// If n is 0, this will return 0.
+uint32_t NS_random(NS *ns, uint32_t n);
+
+// Seed the random number generator.  Note that:
+//  * This is called automatically by NS_init, so it usually does not need to be called explicitly.
+//  * This is provided for convenience, as the actual random seed is two 32-bit numbers.
+void NS_seed(NS *ns, uint32_t n);
 
 //None of the max values should be zero
 #define PLAYER_MAX 2
@@ -174,6 +196,12 @@ struct NS
 			//players[respawn] will respawn at the end of this effect if type == ET_Respawn
 			//a respawn effect will be generated at the end of this effect if type == ET_Explosion and respawn>=0
 	} effects[EFFECT_MAX];
+
+    struct NS_Random
+    {
+        uint32_t z;
+        uint32_t w;
+    } random;
 };
 
 // TODO: Don't expose these variables in the header.
