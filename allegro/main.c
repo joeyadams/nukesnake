@@ -275,6 +275,7 @@ int main(void)
 	NS_init(ns);
     ns->glue.DrawCell = DrawCell;
     ns->glue.Event = GlueEvent;
+    ns->glue.ScoresChanged = GlueScoresChanged;
     ns->glue.Log = GlueLog;
 	
 	if (ns->settings.sound)

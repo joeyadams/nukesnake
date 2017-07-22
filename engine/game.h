@@ -133,6 +133,9 @@ struct NS
         // @player: Index of the player in the players array, or -1 if not applicable.
         void (*Event)(void *ctx, enum EventTypes type, short param, short player, unsigned short x, unsigned short y);
 
+        // Called after any players' scores or ammo counts change.
+        void (*ScoresChanged)(void *ctx, NS *ns);
+
         // Called when the game engine generates a diagnostic log message,
         // e.g. because something invalid or unexpected was detected.
         void (*Log)(void *ctx, enum NS_LogLevel logLevel, char *message);

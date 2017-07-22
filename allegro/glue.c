@@ -151,29 +151,10 @@ void GlueEvent(void *ctx, enum EventTypes type, short param, short player, unsig
 	}
 }
 
-void GlueLog(void *ctx, enum NS_LogLevel logLevel, char *message)
+void GlueScoresChanged(void *ctx, NS *ns)
 {
     (void)ctx;
 
-    switch (logLevel)
-    {
-        case NSL_Error:
-            fprintf(stderr, "ERROR:  %s\n", message);
-            break;
-        case NSL_Glitch:
-            fprintf(stderr, "GLITCH:  %s\n", message);
-            break;
-        case NSL_Bug:
-            fprintf(stderr, "BUG:  %s\n", message);
-            break;
-        case NSL_Fatal:
-            fprintf(stderr, "FATAL:  %s\n", message);
-            break;
-    }
-}
-
-void UpdateScores(NS *ns)
-{
 	const NS_Player *left, *right;
 	char buffer[256];
 	left = NS_find_player_by_type(ns, PT_Left, NULL);
@@ -193,4 +174,25 @@ void UpdateScores(NS *ns)
 		right->deaths, right->bullet_count, right->rocket_count, right->nuke_count);
 print_buffer:
 	textout_centre_ex(screen, font, buffer, screen->w/2,20, makecol(0,0,0), makecol(255,255,255));
+}
+
+void GlueLog(void *ctx, enum NS_LogLevel logLevel, char *message)
+{
+    (void)ctx;
+
+    switch (logLevel)
+    {
+        case NSL_Error:
+            fprintf(stderr, "ERROR:  %s\n", message);
+            break;
+        case NSL_Glitch:
+            fprintf(stderr, "GLITCH:  %s\n", message);
+            break;
+        case NSL_Bug:
+            fprintf(stderr, "BUG:  %s\n", message);
+            break;
+        case NSL_Fatal:
+            fprintf(stderr, "FATAL:  %s\n", message);
+            break;
+    }
 }

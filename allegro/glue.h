@@ -39,13 +39,6 @@
 
 #include "game.h"
 
-struct NS;
-
-typedef struct NS_Net
-{
-	
-} NS_Net;
-
 void DrawCell(void *ctx, short x, short y, enum TileTypes icon);
 
 // TODO: Make GetPlayer* methods on gamestate (called outside of NS_frame).
@@ -75,9 +68,8 @@ void ClearPlayerDirKeys(void);
 //Currently, it is just for spawning sounds
 void GlueEvent(void *ctx, enum EventTypes type, short param, short player, unsigned short x, unsigned short y);
 
-void GlueLog(void *ctx, enum NS_LogLevel logLevel, char *message);
+void GlueScoresChanged(void *ctx, NS *ns);
 
-// Called after any player's score or ammo count changes.
-void UpdateScores(struct NS *ns);
+void GlueLog(void *ctx, enum NS_LogLevel logLevel, char *message);
 
 #endif //ifndef DRAW_H

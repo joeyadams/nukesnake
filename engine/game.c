@@ -134,6 +134,12 @@ static void event(NS *ns, short type, short param, short player, unsigned short 
     }
 }
 
+static void scores_changed(NS *ns)
+{
+    if (ns->glue.ScoresChanged != NULL)
+        ns->glue.ScoresChanged(ns->glue.ctx, ns);
+}
+
 uint32_t NS_rand32(NS *ns)
 {
     NS_Random *rng = &ns->random;
@@ -527,7 +533,7 @@ static void kill_player(NS *ns, NS_Player *player,short mod)
 	player->deaths++;
 	cell(player->x, player->y) = player->covering;
 	player->alive = 0;
-	UpdateScores(ns);
+	scores_changed(ns);
 	respawn_player(ns, player, 1);
 	event(ns, EV_PlayerKilled, mod, player-ns->players, player->x, player->y);
 
@@ -882,19 +888,19 @@ bounceback:
 		case AmmoPack:
 			obj->covering = Floor;
 			obj->bullet_count += 5;
-			UpdateScores(ns);
+			scores_changed(ns);
 			event(ns, EV_AmmoPickedUp, 0, obj-ns->players, obj->x, obj->y);
 			return;
 		case RocketPack:
 			obj->covering = Floor;
 			obj->rocket_count += 1;
-			UpdateScores(ns);
+			scores_changed(ns);
 			event(ns, EV_RocketPickedUp, 0, obj-ns->players, obj->x, obj->y);
 			return;
 		case NukePack:
 			obj->covering = Floor;
 			obj->nuke_count += 1;
-			UpdateScores(ns);
+			scores_changed(ns);
 			event(ns, EV_NukePickedUp, 0, obj-ns->players, obj->x, obj->y);
 			return;
 		case Mine:
@@ -1217,7 +1223,7 @@ static short check_fires(NS *ns)
 					if (ns->settings.nuke_ammo)
 					{
 						ptr->nuke_count--;
-						UpdateScores(ns);
+						scores_changed(ns);
 					}
 				}
 				else if (ns->settings.rockets && (!ns->settings.rocket_ammo || ptr->rocket_count))
@@ -1226,7 +1232,7 @@ static short check_fires(NS *ns)
 					if (ns->settings.rocket_ammo)
 					{
 						ptr->rocket_count--;
-						UpdateScores(ns);
+						scores_changed(ns);
 					}
 				}
 				else if (ns->settings.bullets && (!ns->settings.bullet_ammo || ptr->bullet_count))
@@ -1235,7 +1241,7 @@ static short check_fires(NS *ns)
 					if (ns->settings.bullet_ammo)
 					{
 						ptr->bullet_count--;
-						UpdateScores(ns);
+						scores_changed(ns);
 					}
 				}
 				else
@@ -1377,7 +1383,7 @@ void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gamety
 				ai_newround(ns, p);
 		}
 	}
-	UpdateScores(ns);
+	scores_changed(ns);
 }
 
 void NS_newround(NS *ns, unsigned short width,unsigned short height)
