@@ -100,7 +100,6 @@ void AcceptFireKey(short type,short val)
 		*fire = 1;
 }
 
-//used in game.c for initialization of game or round
 void ClearAllKeys(void)
 {
 	memset(PlayerKeyData,0,sizeof(PlayerKeyData));

@@ -294,6 +294,8 @@ int main(void)
 	LOCK_FUNCTION(close_button_handler);
 	set_close_button_callback(close_button_handler);
 	
+    ClearAllKeys();
+
 	NS_newgame(ns, w/16, h/16-2, C_NewGame); //start with a 2 player game
 	
 	do_dialog(game_dialog, -1);

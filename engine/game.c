@@ -1352,7 +1352,6 @@ void NS_uninit(NS *ns)
 //	C_NewGame, C_NewGame_1Player, C_Demo)
 void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gametype)
 {
-	ClearAllKeys();
 	ns->phase=59;
 	ns->paused=0;
 	ns->player_dying=0;
@@ -1388,7 +1387,6 @@ void NS_newgame(NS *ns, unsigned short width,unsigned short height, short gamety
 
 void NS_newround(NS *ns, unsigned short width,unsigned short height)
 {
-	ClearAllKeys();
 	ns->phase=59;
 	ns->paused=0;
 	ns->reset_scheduled=0;

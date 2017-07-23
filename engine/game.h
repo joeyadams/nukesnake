@@ -170,9 +170,6 @@ struct NS
 	unsigned short phase; //counts down
 	unsigned short paused:1, player_dying:1, reset_scheduled:1;
 
-    // Set to 1 by NS_frame when any player's score or ammo count changes.
-    unsigned short scores_changed:1;
-
 	struct NS_Player
 	{
 		char type; //Any of PlayerTypes or 0 for hole

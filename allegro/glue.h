@@ -57,7 +57,7 @@ void AcceptDirKey(short type, short direction, bool diagonals, bool diagonal_com
 //handles a fire keypress for a player
 void AcceptFireKey(short type,short val);
 
-//used in game.c for initialization of game or round
+// Initialize key accumulator.
 void ClearAllKeys(void);
 
 //clears the player direction key data in preparation for the next frame
